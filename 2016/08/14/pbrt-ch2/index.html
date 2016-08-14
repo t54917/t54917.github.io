@@ -1,0 +1,707 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/vendors/font-awesome/css/font-awesome.min.css?v=4.4.0" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.0.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="CG,PBRT," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.0.1" />
+
+
+
+
+
+
+<meta name="description" content="本章意在阐述PBRT几何基础的实现，这是图形程序的最底层。本章所写多为数学常识，因此不再概述。代码收录于core/transform.h和core/transform.cpp。
+2.1 坐标系统 P84PBRT采用三个浮点数描述三维空间下的点、向量和法线。在N维空间中，坐标系原点P0和其N个线性无关的基向量定义了N维仿射空间(Affine Space)，空间内任一向量可由基向量的线性组合表示，同样">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PBRT 章节2 几何与变换">
+<meta property="og:url" content="http://sulpures.me/2016/08/14/pbrt-ch2/index.html">
+<meta property="og:site_name" content="糖与玻璃渣">
+<meta property="og:description" content="本章意在阐述PBRT几何基础的实现，这是图形程序的最底层。本章所写多为数学常识，因此不再概述。代码收录于core/transform.h和core/transform.cpp。
+2.1 坐标系统 P84PBRT采用三个浮点数描述三维空间下的点、向量和法线。在N维空间中，坐标系原点P0和其N个线性无关的基向量定义了N维仿射空间(Affine Space)，空间内任一向量可由基向量的线性组合表示，同样">
+<meta property="og:updated_time" content="2016-08-14T07:32:18.577Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="PBRT 章节2 几何与变换">
+<meta name="twitter:description" content="本章意在阐述PBRT几何基础的实现，这是图形程序的最底层。本章所写多为数学常识，因此不再概述。代码收录于core/transform.h和core/transform.cpp。
+2.1 坐标系统 P84PBRT采用三个浮点数描述三维空间下的点、向量和法线。在N维空间中，坐标系原点P0和其N个线性无关的基向量定义了N维仿射空间(Affine Space)，空间内任一向量可由基向量的线性组合表示，同样">
+
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: 0,
+      author: '博主'
+    }
+  };
+</script>
+
+
+
+
+  <link rel="canonical" href="http://sulpures.me/2016/08/14/pbrt-ch2/"/>
+
+  <title> PBRT 章节2 几何与变换 | 糖与玻璃渣 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">糖与玻璃渣</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+  <p class="site-subtitle"></p>
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                PBRT 章节2 几何与变换
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            <span class="post-meta-item-icon">
+              <i class="fa fa-calendar-o"></i>
+            </span>
+            <span class="post-meta-item-text">发表于</span>
+            <time itemprop="dateCreated" datetime="2016-08-14T15:32:03+08:00" content="2016-08-14">
+              2016-08-14
+            </time>
+          </span>
+
+          
+            <span class="post-category" >
+              &nbsp; | &nbsp;
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                  <a href="/categories/Graphics/" itemprop="url" rel="index">
+                    <span itemprop="name">Graphics</span>
+                  </a>
+                </span>
+
+                
+                
+
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+
+          
+          
+
+          
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>本章意在阐述PBRT几何基础的实现，这是图形程序的最底层。本章所写多为数学常识，因此不再概述。代码收录于core/transform.h和core/transform.cpp。</p>
+<h2 id="2-1-坐标系统-P84"><a href="#2-1-坐标系统-P84" class="headerlink" title="2.1 坐标系统 P84"></a>2.1 坐标系统 P84</h2><p>PBRT采用三个浮点数描述三维空间下的点、向量和法线。在N维空间中，坐标系原点P0和其N个线性无关的基向量定义了N维仿射空间(Affine Space)，空间内任一向量可由基向量的线性组合表示，同样空间内任一点可由原点和基向量表示。</p>
+<h3 id="2-1-1-左手坐标系"><a href="#2-1-1-左手坐标系" class="headerlink" title="2.1.1 左手坐标系"></a>2.1.1 左手坐标系</h3><p>PBRT使用左手坐标系。</p>
+<h2 id="2-2-向量-P86"><a href="#2-2-向量-P86" class="headerlink" title="2.2 向量 P86"></a>2.2 向量 P86</h2><p>伪代码如下。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Geometry Declarations&gt; ≡</div><div class="line">    <span class="keyword">class</span> Vector</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;Vector Public Methods <span class="number">58</span>&gt;</div><div class="line">        &lt;Vector Public Data <span class="number">57</span>&gt;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<p>是的，成员变量是公共的。设为私有会带来麻烦。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">&lt;Vector Public Data&gt; ≡ <span class="number">57</span></div><div class="line">    <span class="keyword">float</span> x, y, z;</div></pre></td></tr></table></figure></p>
+<p>坐标分量默认置零。人为赋值时采用断言检查。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;Vector Public Methods&gt; ≡ <span class="number">57</span></div><div class="line">    Vector()</div><div class="line">    &#123;</div><div class="line">        x = y = z = <span class="number">0.f</span>;</div><div class="line">    &#125;</div><div class="line">    Vector(<span class="keyword">float</span> xx, <span class="keyword">float</span> yy, <span class="keyword">float</span> zz)</div><div class="line">        : x(xx), y(yy), z(zz)</div><div class="line">    &#123;</div><div class="line">        Assert(!HasNaNs());</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="2-2-1-加减"><a href="#2-2-1-加减" class="headerlink" title="2.2.1 加减"></a>2.2.1 加减</h3><p>加法伪代码如下，减法同理。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;Vector Public Methods&gt; +≡ <span class="number">57</span></div><div class="line">    Vector <span class="keyword">operator</span>+(<span class="keyword">const</span> Vector &amp;v) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> Vector(x + v.x, y + v.y, z + v.z);</div><div class="line">    &#125;</div><div class="line">    Vector&amp; <span class="keyword">operator</span>+=(<span class="keyword">const</span> Vector &amp;v)</div><div class="line">    &#123;</div><div class="line">        x += v.x; y += v.y; z += v.z;</div><div class="line">        <span class="keyword">return</span> *<span class="keyword">this</span>;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="2-2-2-乘除"><a href="#2-2-2-乘除" class="headerlink" title="2.2.2 乘除"></a>2.2.2 乘除</h3><p>乘法伪代码如下。除法用乘倒数进行优化，不再赘述。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">&lt;Vector Public Methods&gt; +≡ <span class="number">57</span></div><div class="line">    Vector <span class="keyword">operator</span>*(<span class="keyword">float</span> f) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> Vector(f*x, f*y, f*z);</div><div class="line">    &#125;</div><div class="line">    Vector &amp;<span class="keyword">operator</span>*=(<span class="keyword">float</span> f)</div><div class="line">    &#123;</div><div class="line">        x *= f; y *= f; z *= f;</div><div class="line">    <span class="keyword">return</span> *<span class="keyword">this</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&lt;Geometry Inline Functions&gt; ≡</div><div class="line">    <span class="keyword">inline</span> Vector <span class="keyword">operator</span>*(<span class="keyword">float</span> f, <span class="keyword">const</span> Vector &amp;v)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> v*f;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>最后，提供了一个等价表示。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&lt;Vector Public Methods&gt; +≡ <span class="number">57</span></div><div class="line">    <span class="keyword">float</span> <span class="keyword">operator</span>[](<span class="keyword">int</span> i) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        Assert(i &gt;= <span class="number">0</span> &amp;&amp; i &lt;= <span class="number">2</span>);</div><div class="line">        <span class="keyword">return</span> (&amp;x)[i];</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">float</span> &amp;<span class="keyword">operator</span>[](<span class="keyword">int</span> i)</div><div class="line">    &#123;</div><div class="line">        Assert(i &gt;= <span class="number">0</span> &amp;&amp; i &lt;= <span class="number">2</span>);</div><div class="line">        <span class="keyword">return</span> (&amp;x)[i];</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="2-2-3-点乘与叉乘"><a href="#2-2-3-点乘与叉乘" class="headerlink" title="2.2.3 点乘与叉乘"></a>2.2.3 点乘与叉乘</h3><p>似乎都是常识，没用什么值得总结。点乘函数有两个，AbsDot返回绝对值。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;Geometry Inline Functions&gt; +≡</div><div class="line">    <span class="function"><span class="keyword">inline</span> <span class="keyword">float</span> <span class="title">Dot</span><span class="params">(<span class="keyword">const</span> Vector &amp;v1, <span class="keyword">const</span> Vector &amp;v2)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>叉乘如下。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Geometry Inline Functions&gt; +≡</div><div class="line">    <span class="function"><span class="keyword">inline</span> Vector <span class="title">Cross</span><span class="params">(<span class="keyword">const</span> Vector &amp;v1, <span class="keyword">const</span> Vector &amp;v2)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> Vector((v1.y * v2.z) - (v1.z * v2.y),</div><div class="line">                      (v1.z * v2.x) - (v1.x * v2.z),</div><div class="line">                      (v1.x * v2.y) - (v1.y * v2.x));</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="2-2-4-正规化"><a href="#2-2-4-正规化" class="headerlink" title="2.2.4 正规化"></a>2.2.4 正规化</h3><p>将向量转化为单位向量。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">&lt;Vector Public Methods&gt; +≡ <span class="number">57</span></div><div class="line">    <span class="function"><span class="keyword">float</span> <span class="title">LengthSquared</span><span class="params">()</span> <span class="keyword">const</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> x*x + y*y + z*z;</div><div class="line">    &#125;</div><div class="line">    <span class="function"><span class="keyword">float</span> <span class="title">Length</span><span class="params">()</span> <span class="keyword">const</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> sqrtf(LengthSquared());</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">&lt;Geometry Inline Functions&gt; +≡</div><div class="line">    <span class="function"><span class="keyword">inline</span> Vector <span class="title">Normalize</span><span class="params">(<span class="keyword">const</span> Vector &amp;v)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> v / v.Length();</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="2-2-5-向量建立坐标系"><a href="#2-2-5-向量建立坐标系" class="headerlink" title="2.2.5 向量建立坐标系"></a>2.2.5 向量建立坐标系</h3><p>对于已正规化的向量v1，交换两分量，取其中一分量为负，置空第三分量，正规化，得v2，点乘，得v3。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">&lt;Geometry Inline Functions&gt; +≡</div><div class="line">    <span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">CoordinateSystem</span><span class="params">(<span class="keyword">const</span> Vector &amp;v1, Vector *v2, Vector *v3)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">if</span> (fabsf(v1.x) &gt; fabsf(v1.y))</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">float</span> invLen = <span class="number">1.f</span> / sqrtf(v1.x*v1.x + v1.z*v1.z);</div><div class="line">            *v2 = Vector(-v1.z * invLen, <span class="number">0.f</span>, v1.x * invLen);</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">else</span></div><div class="line">        &#123;</div><div class="line">            <span class="keyword">float</span> invLen = <span class="number">1.f</span> / sqrtf(v1.y*v1.y + v1.z*v1.z);</div><div class="line">            *v2 = Vector(<span class="number">0.f</span>, v1.z * invLen, -v1.y * invLen);</div><div class="line">        &#125;</div><div class="line">        *v3 = Cross(v1, *v2);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h2 id="2-3-点-P92"><a href="#2-3-点-P92" class="headerlink" title="2.3 点 P92"></a>2.3 点 P92</h2><p>嗯，和class Vector是一样的。构造函数也相似。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">&lt;Geometry Declarations&gt; +≡</div><div class="line">    <span class="keyword">class</span> Point</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;Point Public Methods <span class="number">64</span>&gt;</div><div class="line">        &lt;Point Public Data <span class="number">63</span>&gt;</div><div class="line">    &#125;;</div><div class="line">    </div><div class="line">&lt;Point Public Data&gt; ≡ <span class="number">63</span></div><div class="line">    <span class="keyword">float</span> x, y, z;</div><div class="line">    </div><div class="line">&lt;Point Public Methods&gt; ≡ <span class="number">63</span></div><div class="line">    Point()</div><div class="line">    &#123;</div><div class="line">        x = y = z = <span class="number">0.f</span>;</div><div class="line">    &#125;</div><div class="line">    Point(<span class="keyword">float</span> xx, <span class="keyword">float</span> yy, <span class="keyword">float</span> zz)</div><div class="line">        : x(xx), y(yy), z(zz)c &#123; &#125;</div></pre></td></tr></table></figure></p>
+<p>类中提供了一些简单的运算符重载，不再一一摘录。此外还有一些其他的函数，例如点的加法，加权和之类，虽不具数学意义，但图形计算会用到。</p>
+<h2 id="2-4-法线-P94"><a href="#2-4-法线-P94" class="headerlink" title="2.4 法线 P94"></a>2.4 法线 P94</h2><p>法线，与面垂直的向量。但它不能和点相加，不能求两法线的叉乘，法线也不一定是标准化的。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Geometry Declarations&gt; +≡</div><div class="line">    <span class="keyword">class</span> Normal</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;Normal Public Methods <span class="number">66</span>&gt;</div><div class="line">        &lt;Normal Public Data&gt;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<p>虽然Normal是Vector，但之间的隐转（n = v）可能会带来麻烦。因此，explicit（n = Normal(v)）。<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;Normal Public Methods&gt; ≡ 65</div><div class="line">    explicit Normal(const Vector &amp;v)</div><div class="line">        : x(v.x), y(v.y), z(v.z) &#123; &#125;</div><div class="line"></div><div class="line">&lt;Vector Public Methods&gt; +≡ 57</div><div class="line">    explicit Vector(const Normal &amp;n);</div><div class="line">    </div><div class="line">&lt;Geometry Inline Functions&gt; +≡</div><div class="line">    inline Vector::Vector(const Normal &amp;n)</div><div class="line">        : x(n.x), y(n.y), z(n.z) &#123; &#125;</div></pre></td></tr></table></figure></p>
+<p>函数Faceforward()保证法线可以与向量位于一个半球中。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;Geometry Inline Functions&gt; +≡</div><div class="line">    <span class="function"><span class="keyword">inline</span> Normal <span class="title">Faceforward</span><span class="params">(<span class="keyword">const</span> Normal &amp;n, <span class="keyword">const</span> Vector &amp;v)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> (Dot(n, v) &lt; <span class="number">0.f</span>) ? -n : n;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>此外类中还有一些其他的函数，这里不再叙述。</p>
+<h2 id="2-5-光线-P95"><a href="#2-5-光线-P95" class="headerlink" title="2.5 光线 P95"></a>2.5 光线 P95</h2><p>光线，射线，顶点加向量。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Geometry Declarations&gt; +≡</div><div class="line">    <span class="keyword">class</span> Ray</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;Ray Public Methods <span class="number">68</span>&gt;</div><div class="line">        &lt;Ray Public Data <span class="number">67</span>&gt;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<p>数据成员中定义的mint和maxt用于将光限制在这一区间内。为突破const Ray&amp;的限制，mutable。Ray中定义了一个时间值，用以表示动态效果。此外还有判断其折越次数的深度值。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;Ray Public Data&gt; ≡ <span class="number">66</span></div><div class="line">    Point o;</div><div class="line">    Vector d;</div><div class="line">    <span class="keyword">mutable</span> <span class="keyword">float</span> mint, maxt;</div><div class="line">    <span class="keyword">float</span> time;</div><div class="line">    <span class="keyword">int</span> depth;</div></pre></td></tr></table></figure></p>
+<p>构造函数。采用非零极小数初始化mint，避免因浮点计算精度而引起自相交的错误。此外还提供了构造函数的另一重载，使其可以继承父光线的一些属性。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;Ray Public Methods&gt; =</div><div class="line">    Ray() : mint(RAY_EPSILON), maxt(INFINITY), time(<span class="number">0.f</span>) &#123; &#125;</div><div class="line">    Ray(<span class="keyword">const</span> Point &amp;origin, <span class="keyword">const</span> Vector &amp;direction,</div><div class="line">        <span class="keyword">float</span> start = RAY_EPSION, <span class="keyword">float</span> end = INFINITY, <span class="keyword">float</span> t = <span class="number">0.f</span>)</div><div class="line">        : o(origin), d(direction), mint(start), maxt(end), time(t) &#123; &#125;</div></pre></td></tr></table></figure></p>
+<p>此外，重载操作符()，根据参数t返回Point的位置。<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;Ray Public Methods&gt; +≡ 66</div><div class="line">    Point operator()(float t) const</div><div class="line">    &#123;</div><div class="line">        return o + d * t;</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">Ray r(Point(0,0,0), Vector(1,2,3));</div><div class="line">Point p = r(1.7);</div></pre></td></tr></table></figure></p>
+<h3 id="2-5-1-光线微分"><a href="#2-5-1-光线微分" class="headerlink" title="2.5.1 光线微分"></a>2.5.1 光线微分</h3><p>上章提到，光线微分是为纹理反走样服务的。RayDifferential是Ray的子类，包含了两条附加的辅助光线。这两条光线是指向胶片平面的主光线向x和y轴偏移一个取样点大小而成的相机光线。通过这三条光线，可以确定场景在胶片平面下的投影面积，之后Texture类就可以计算出纹理在这个面积上的平均值，反走样。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">&lt;Geometry Declarations&gt; +≡</div><div class="line">    <span class="keyword">class</span> RayDifferential : <span class="keyword">public</span> Ray</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;RayDifferential Public Methods <span class="number">69</span>&gt;</div><div class="line">        &lt;RayDifferential Public Data <span class="number">69</span>&gt;</div><div class="line">    &#125;;</div><div class="line">    </div><div class="line">&lt;RayDifferential Public Data&gt; ≡ <span class="number">69</span></div><div class="line">    <span class="keyword">bool</span> hasDifferentials;</div><div class="line">    Point rxOrigin, ryOrigin;</div><div class="line">    Vector rxDirection, ryDirection;</div></pre></td></tr></table></figure></p>
+<p>构造函数及重载。同样，隐转可能会带来麻烦，explicit之。hasDifferentials初始为false，表示此时其相邻光线是未知的。<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">&lt;RayDifferential Public Methods&gt; ≡ 69</div><div class="line">    RayDifferential()</div><div class="line">    &#123;</div><div class="line">        hasDifferentials = false;</div><div class="line">    &#125;</div><div class="line">    RayDifferential(const Point &amp;org, const Vector &amp;dir, float start,</div><div class="line">                    float end = INFINITY, float t = 0.f, int d = 0)</div><div class="line">        : Ray(org, dir, start, end, t, d)</div><div class="line">    &#123;</div><div class="line">        hasDifferentials = false;</div><div class="line">    &#125;</div><div class="line">    RayDifferential(const Point &amp;org, const Vector &amp;dir, const Ray &amp;parent,</div><div class="line">                    float start, float end = INFINITY)</div><div class="line">        : Ray(org, dir, start, end, parent.time, parent.depth+1)</div><div class="line">    &#123;</div><div class="line">        hasDifferentials = false;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&lt;RayDifferential Public Methods&gt; +≡ 69</div><div class="line">    e xplicit RayDifferential(const Ray &amp;ray) : Ray(ray)</div><div class="line">    &#123;</div><div class="line">        hasDifferentials = false;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>Camera中计算出的相邻光线是隔一个像素点。ScaleDifferentials()可将其修正为间隔一个实际的样本空间。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;RayDifferential Public Methods&gt; +≡ <span class="number">69</span></div><div class="line">    <span class="function"><span class="keyword">void</span> <span class="title">ScaleDifferentials</span><span class="params">(<span class="keyword">float</span> s)</span></span></div><div class="line">    &#123;</div><div class="line">        rxOrigin = o + (rxOrigin - o) * s;</div><div class="line">        ryOrigin = o + (ryOrigin - o) * s;</div><div class="line">        rxDirection = d + (rxDirection - d) * s;</div><div class="line">        ryDirection = d + (ryDirection - d) * s;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h2 id="2-6-三维包围盒-P99"><a href="#2-6-三维包围盒-P99" class="headerlink" title="2.6 三维包围盒 P99"></a>2.6 三维包围盒 P99</h2><p>PBRT使用轴向包围盒（AABBs，Axis-Aligned Bounding Boxes），其他方式如方向包围盒（OBBs，Oriented Bounding Boxes）或是包围球也很流行。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;Geometry Declarations&gt; +≡</div><div class="line">    <span class="keyword">class</span> BBox</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;BBox Public Methods <span class="number">70</span>&gt;</div><div class="line">        &lt;BBox Public Data <span class="number">71</span>&gt;</div><div class="line">    &#125;;</div><div class="line"></div><div class="line">&lt;BBox Public Data&gt; ≡ <span class="number">70</span></div><div class="line">    Point pMin, pMax;</div></pre></td></tr></table></figure></p>
+<p>AABB的数据结果可以为一个顶点加上三个长度值，亦或是两个对立的顶点。这里采用后者。构造函数及其重载如下。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">&lt;BBox Public Methods&gt; ≡ <span class="number">70</span></div><div class="line">    BBox()</div><div class="line">    &#123;</div><div class="line">        pMin = Point(INFINITY, INFINITY, INFINITY);</div><div class="line">        pMax = Point(-INFINITY, -INFINITY, -INFINITY);</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">    BBox(<span class="keyword">const</span> Point &amp;p) : pMin(p), pMax(p) &#123; &#125;</div><div class="line">    </div><div class="line">    BBox(<span class="keyword">const</span> Point &amp;p1, <span class="keyword">const</span> Point &amp;p2)</div><div class="line">    &#123;</div><div class="line">        pMin = Point(min(p1.x, p2.x), min(p1.y, p2.y), min(p1.z, p2.z));</div><div class="line">        pMax = Point(max(p1.x, p2.x), max(p1.y, p2.y), max(p1.z, p2.z));</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>对于给定一点，函数BBox::Union()用于生成包含此点的新包围盒。也正是这个函数完成了包围盒的构建。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">&lt;BBox Method Definitions&gt; ≡</div><div class="line">    <span class="function">BBox <span class="title">Union</span><span class="params">(<span class="keyword">const</span> BBox &amp;b, <span class="keyword">const</span> Point &amp;p)</span></span></div><div class="line">    &#123;</div><div class="line">        BBox ret = b;</div><div class="line">        ret.pMin.x = min(b.pMin.x, p.x);</div><div class="line">        ret.pMin.y = min(b.pMin.y, p.y);</div><div class="line">        ret.pMin.z = min(b.pMin.z, p.z);</div><div class="line">        ret.pMax.x = max(b.pMax.x, p.x);</div><div class="line">        ret.pMax.y = max(b.pMax.y, p.y);</div><div class="line">        ret.pMax.z = max(b.pMax.z, p.z);</div><div class="line">        <span class="keyword">return</span> ret;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>类中提供了一系列的函数。包括合并两个包围盒，判断两个包围盒是否重叠，判断包围盒是否涵盖某一点，定量扩张包围盒，计算表面积和体积等。因为较简单，不再赘述。<br>函数BBox::MaximumExtent()可返回包围盒的最长轴。这很重要，沿最长轴建立KD树或是BVH树时可减少计算开销。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">&lt;BBox Public Methods&gt; +≡ <span class="number">70</span></div><div class="line">    <span class="function"><span class="keyword">int</span> <span class="title">MaximumExtent</span><span class="params">()</span> <span class="keyword">const</span></span></div><div class="line">    &#123;</div><div class="line">        Vector diag = pMax - pMin;</div><div class="line">        <span class="keyword">if</span> (diag.x &gt; diag.y &amp;&amp; diag.x &gt; diag.z)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (diag.y &gt; diag.z)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> <span class="number">1</span>;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">else</span></div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> <span class="number">2</span>;</div><div class="line">        &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>BBox中还提供了进行线性插值的函数，返回盒内偏移量的函数，转换为包围球的函数（当然，包围体会变得更加宽大），这部分直接查看源码或许是更直观的方法。</p>
+<h2 id="2-7-变换-P103"><a href="#2-7-变换-P103" class="headerlink" title="2.7 变换 P103"></a>2.7 变换 P103</h2><p>变换（Transformation），即点到点或向量到向量的一个映射。这一节，只讨论线性的、连续的、一一对应的、可逆的变换。4x4的矩阵足以支持点和向量的变换，这包括，其一，坐标系内的变换，其二，坐标系间的变换。以下内容多为线性代数之常识，因此一笔带过，不再赘述。</p>
+<h3 id="2-7-1-齐次坐标"><a href="#2-7-1-齐次坐标" class="headerlink" title="2.7.1 齐次坐标"></a>2.7.1 齐次坐标</h3><p>对于给定坐标系（p，v1，v2，v3），坐标（x，y，z）具有二义性，既可表示点，又可表示向量。为区分二者，本章将点写成内积形式[S1 S2 S3 1] [v1 v2 v3 P0]T，把向量写成内积形式[S1’  S2’ S3’ 0] [v1 v2 v3 P0]T。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Declarations&gt; ≡</div><div class="line">    <span class="keyword">class</span> Transform</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;Transform Public Methods <span class="number">77</span>&gt;</div><div class="line">    <span class="keyword">private</span>:</div><div class="line">        &lt;Transform Private Data <span class="number">76</span>&gt;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<p>上文已述，4x4矩阵是变换的根本。Matrix4x4类定义了这一结构。但考虑到矩阵昂贵的内存占用，Shapes类含有指向矩阵的指针，并借助TransformCache类确保具有相同变换的成千上万形体在内存中共享一份变换实例，进而节省内存占用。当然，代价是Transform被创建且被多个场景对象共享后，Transform中元素便不可再被修改。不过这也无妨，因为PBRT中的场景变换通常是在读取场景描述文件时建立的，之后的渲染阶段也不需要修改。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Private Data&gt; ≡ <span class="number">76</span></div><div class="line">    Matrix4x4 m, mInv;</div></pre></td></tr></table></figure></p>
+<h3 id="2-7-2-基本操作"><a href="#2-7-2-基本操作" class="headerlink" title="2.7.2 基本操作"></a>2.7.2 基本操作</h3><p>单位矩阵用I表示。Transform类的构造函数中提供了各种建立矩阵的方式。逆矩阵能手动提供自然是最好的。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Public Methods&gt; ≡ <span class="number">76</span></div><div class="line">    Transform() &#123; &#125;</div><div class="line">    </div><div class="line">    Transform(<span class="keyword">const</span> <span class="keyword">float</span> mat[<span class="number">4</span>][<span class="number">4</span>])</div><div class="line">    &#123;</div><div class="line">        m = Matrix4x4(mat[<span class="number">0</span>][<span class="number">0</span>], mat[<span class="number">0</span>][<span class="number">1</span>], mat[<span class="number">0</span>][<span class="number">2</span>], mat[<span class="number">0</span>][<span class="number">3</span>],</div><div class="line">                      mat[<span class="number">1</span>][<span class="number">0</span>], mat[<span class="number">1</span>][<span class="number">1</span>], mat[<span class="number">1</span>][<span class="number">2</span>], mat[<span class="number">1</span>][<span class="number">3</span>],</div><div class="line">                      mat[<span class="number">2</span>][<span class="number">0</span>], mat[<span class="number">2</span>][<span class="number">1</span>], mat[<span class="number">2</span>][<span class="number">2</span>], mat[<span class="number">2</span>][<span class="number">3</span>],</div><div class="line">                      mat[<span class="number">3</span>][<span class="number">0</span>], mat[<span class="number">3</span>][<span class="number">1</span>], mat[<span class="number">3</span>][<span class="number">2</span>], mat[<span class="number">3</span>][<span class="number">3</span>]);</div><div class="line">        mInv = Inverse(m);</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">    Transform(<span class="keyword">const</span> Matrix4x4 &amp;mat)</div><div class="line">        : m(mat), mInv(Inverse(mat)) &#123; &#125;</div><div class="line">    </div><div class="line">    Transform(<span class="keyword">const</span> Matrix4x4 &amp;mat, <span class="keyword">const</span> Matrix4x4 &amp;minv)</div><div class="line">        : m(mat), mInv(minv) &#123; &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="2-7-3-平移变换"><a href="#2-7-3-平移变换" class="headerlink" title="2.7.3 平移变换"></a>2.7.3 平移变换</h3><p>平移变换（Translation Transformation）是最简单的变换。一个公式一段伪码足矣。<br>$$\begin{pmatrix}<br>1&amp;0&amp;0&amp;\Delta x\<br>0&amp;1&amp;0&amp;\Delta y\<br>0&amp;0&amp;1&amp;\Delta z\<br>0&amp;0&amp;0&amp;1<br>\end{pmatrix}<br>\begin{pmatrix}<br>x\y\z\1/0<br>\end{pmatrix} =<br>\begin{pmatrix}<br>x+\Delta x/x\y+\Delta y/y\z+\Delta z/z<br>\end{pmatrix}<br>$$<br><del>Latex写矩阵真的是太恶心了</del><br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Method Definitions&gt; ≡</div><div class="line">    <span class="function">Transform <span class="title">Translate</span><span class="params">(<span class="keyword">const</span> Vector &amp;delta)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="function">Matrix4x4 <span class="title">m</span><span class="params">(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, delta.x,</span></span></div><div class="line">                    <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, delta.y,</div><div class="line">                    <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, delta.z,</div><div class="line">                    <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>);</div><div class="line">        <span class="function">Matrix4x4 <span class="title">minv</span><span class="params">(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, -delta.x,</span></span></div><div class="line">                       <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, -delta.y,</div><div class="line">                       <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, -delta.z,</div><div class="line">                       <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>);</div><div class="line">        <span class="keyword">return</span> Transform(m, minv);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="2-7-4-伸缩变换"><a href="#2-7-4-伸缩变换" class="headerlink" title="2.7.4 伸缩变换"></a>2.7.4 伸缩变换</h3><p>伪码足矣。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Method Definitions&gt; +≡</div><div class="line">    <span class="function">Transform <span class="title">Scale</span><span class="params">(<span class="keyword">float</span> x, <span class="keyword">float</span> y, <span class="keyword">float</span> z)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="function">Matrix4x4 <span class="title">m</span><span class="params">(x, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>,</span></span></div><div class="line">                    <span class="number">0</span>, y, <span class="number">0</span>, <span class="number">0</span>,</div><div class="line">                    <span class="number">0</span>, <span class="number">0</span>, z, <span class="number">0</span>,</div><div class="line">                    <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>);</div><div class="line">        <span class="function">Matrix4x4 <span class="title">minv</span><span class="params">(<span class="number">1.f</span>/x, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>,</span></span></div><div class="line">                       <span class="number">0</span>, <span class="number">1.f</span>/y, <span class="number">0</span>, <span class="number">0</span>,</div><div class="line">                       <span class="number">0</span>, <span class="number">0</span>, <span class="number">1.f</span>/z, <span class="number">0</span>,</div><div class="line">                       <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>);</div><div class="line">        <span class="keyword">return</span> Transform(m, minv);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="2-7-5-x，y，z轴的旋转变换"><a href="#2-7-5-x，y，z轴的旋转变换" class="headerlink" title="2.7.5 x，y，z轴的旋转变换"></a>2.7.5 x，y，z轴的旋转变换</h3><p>沿某轴旋转，保持某轴不变，其余两轴关于旋转角度做三角函数分解。所以，左手坐标系为前提：<br>沿x轴旋转，y轴向（0，cosθ，sinθ）映射，z轴向（0，-sinθ，cosθ）映射；<br>沿y轴旋转，x轴向（cosθ，0，-sinθ）映射，z轴向（sinθ，0，cosθ）映射；<br>沿z轴旋转，x轴向（cosθ，sinθ，0）映射，y轴向（-sinθ，cosθ，0）映射。<br>一段沿x轴的伪码。其余同理。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Method Definitions&gt; +≡</div><div class="line">    <span class="function">Transform <span class="title">RotateX</span><span class="params">(<span class="keyword">float</span> angle)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> <span class="keyword">sin_t</span> = sinf(Radians(angle));</div><div class="line">        <span class="keyword">float</span> <span class="keyword">cos_t</span> = cosf(Radians(angle));</div><div class="line">        <span class="function">Matrix4x4 <span class="title">m</span><span class="params">(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>,</span></span></div><div class="line">                    <span class="number">0</span>, <span class="keyword">cos_t</span>, -<span class="keyword">sin_t</span>, <span class="number">0</span>,</div><div class="line">                    <span class="number">0</span>, <span class="keyword">sin_t</span>, <span class="keyword">cos_t</span>, <span class="number">0</span>,</div><div class="line">                    <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>);</div><div class="line">        <span class="keyword">return</span> Transform(m, Transpose(m));</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="2-7-6-任意轴的旋转变换"><a href="#2-7-6-任意轴的旋转变换" class="headerlink" title="2.7.6 任意轴的旋转变换"></a>2.7.6 任意轴的旋转变换</h3><p>类中提供了计算向量v绕正规化方向向量a旋转θ度的函数。附图，其中，α为av夹角。<br>![沿</p>
+<hr>
+<hr>
+<hr>
+<hr>
+<hr>
+<hr>
+<hr>
+<hr>
+<hr>
+<p>任意轴旋转图示]<a href="http://www.opengpu.org/bbs/forum.php?mod=attachment&amp;aid=ODc3OHxmMGU2OWFlNHwxNDcxMDYyOTE4fDQ2MTgzfDQyOTI=&amp;noupdate=yes" target="_blank" rel="external">1</a><br>$$v_c = a(v·a)$$<br>$$v_1 = v-v_c$$<br>$$v_2 = (v_1\times a)$$<br>$$v{‘} = v_c + v_1\cos\theta + v_2\sin\theta $$<br>因此，只要实现这个公式即可。<br>$$v{‘}=a(v.a)+(v-a(v.a))\cos\theta + ((v-a(v.a))\times a\sin\theta )$$<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Method Definitions&gt; +≡</div><div class="line">    <span class="function">Transform <span class="title">Rotate</span><span class="params">(<span class="keyword">float</span> angle, <span class="keyword">const</span> Vector &amp;axis)</span></span></div><div class="line">    &#123;</div><div class="line">        Vector a = Normalize(axis);</div><div class="line">        <span class="keyword">float</span> s = sinf(Radians(angle));</div><div class="line">        <span class="keyword">float</span> c = cosf(Radians(angle));</div><div class="line">        <span class="keyword">float</span> m[<span class="number">4</span>][<span class="number">4</span>];</div><div class="line">        m[<span class="number">0</span>][<span class="number">0</span>] = a.x * a.x + (<span class="number">1.f</span> - a.x * a.x) * c;</div><div class="line">        m[<span class="number">0</span>][<span class="number">1</span>] = a.x * a.y * (<span class="number">1.f</span> - c) - a.z * s;</div><div class="line">        m[<span class="number">0</span>][<span class="number">2</span>] = a.x * a.z * (<span class="number">1.f</span> - c) + a.y * s;</div><div class="line">        m[<span class="number">0</span>][<span class="number">3</span>] = <span class="number">0</span>;</div><div class="line">        m[<span class="number">1</span>][<span class="number">0</span>] = a.x * a.y * (<span class="number">1.f</span> - c) + a.z * s;</div><div class="line">        m[<span class="number">1</span>][<span class="number">1</span>] = a.y * a.y + (<span class="number">1.f</span> - a.y * a.y) * c;</div><div class="line">        m[<span class="number">1</span>][<span class="number">2</span>] = a.y * a.z * (<span class="number">1.f</span> - c) - a.x * s;</div><div class="line">        m[<span class="number">1</span>][<span class="number">3</span>] = <span class="number">0</span>;</div><div class="line">        m[<span class="number">2</span>][<span class="number">0</span>] = a.x * a.z * (<span class="number">1.f</span> - c) - a.y * s;</div><div class="line">        m[<span class="number">2</span>][<span class="number">1</span>] = a.y * a.z * (<span class="number">1.f</span> - c) + a.x * s;</div><div class="line">        m[<span class="number">2</span>][<span class="number">2</span>] = a.z * a.z + (<span class="number">1.f</span> - a.z * a.z) * c;</div><div class="line">        m[<span class="number">2</span>][<span class="number">3</span>] = <span class="number">0</span>;</div><div class="line">        m[<span class="number">3</span>][<span class="number">0</span>] = <span class="number">0</span>;</div><div class="line">        m[<span class="number">3</span>][<span class="number">1</span>] = <span class="number">0</span>;</div><div class="line">        m[<span class="number">3</span>][<span class="number">2</span>] = <span class="number">0</span>;</div><div class="line">        m[<span class="number">3</span>][<span class="number">3</span>] = <span class="number">1</span>;</div><div class="line">        <span class="function">Matrix4x4 <span class="title">mat</span><span class="params">(m)</span></span>;</div><div class="line">        <span class="keyword">return</span> Transform(mat, Transpose(mat));</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="2-7-7观察变换"><a href="#2-7-7观察变换" class="headerlink" title="2.7.7观察变换"></a>2.7.7观察变换</h3><p>观察变换（Look-at Transformation）是坐标系间变换。通过此变换将相机置于场景中，即相机空间置于世界空间中。此函数的参数包括一个相机位置坐标，相机指向方向，以及一个向上的向量。当然，这三者是定义在世界坐标系下的。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Method Definitions&gt; +≡</div><div class="line">    <span class="function">Transform <span class="title">LookAt</span><span class="params">(<span class="keyword">const</span> Point &amp;pos, <span class="keyword">const</span> Point &amp;look, <span class="keyword">const</span> Vector &amp;up)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> m[<span class="number">4</span>][<span class="number">4</span>];</div><div class="line">        &lt;Initialize fourth column of viewing matrix <span class="number">84</span>&gt;</div><div class="line">        &lt;Initialize first three columns of viewing matrix <span class="number">85</span>&gt;</div><div class="line">        <span class="function">Matrix4x4 <span class="title">camToWorld</span><span class="params">(m)</span></span>;</div><div class="line">        <span class="keyword">return</span> Transform(Inverse(camToWorld), camToWorld);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>矩阵第四列的变换，只要将[0 0 0 1]映射到世界空间下即可。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;Initialize fourth column of viewing matrix&gt; ≡ <span class="number">84</span></div><div class="line">    m[<span class="number">0</span>][<span class="number">3</span>] = pos.x;</div><div class="line">    m[<span class="number">1</span>][<span class="number">3</span>] = pos.y;</div><div class="line">    m[<span class="number">2</span>][<span class="number">3</span>] = pos.z;</div><div class="line">    m[<span class="number">3</span>][<span class="number">3</span>] = <span class="number">1</span>;</div></pre></td></tr></table></figure></p>
+<p>对于其他三列，首先，利用世界提供的上向量重构出相机新的笛卡尔坐标系，之后分配给矩阵。此处，相机的指向方向是z轴的正向。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">&lt;Initialize first three columns of viewing matrix&gt; ≡ <span class="number">84</span></div><div class="line">    Vector dir = Normalize(look - pos);</div><div class="line">    Vector left = Normalize(Cross(Normalize(up), dir));</div><div class="line">    Vector newUp = Cross(dir, left);</div><div class="line">    m[<span class="number">0</span>][<span class="number">0</span>] = left.x;</div><div class="line">    m[<span class="number">1</span>][<span class="number">0</span>] = left.y;</div><div class="line">    m[<span class="number">2</span>][<span class="number">0</span>] = left.z;</div><div class="line">    m[<span class="number">3</span>][<span class="number">0</span>] = <span class="number">0.</span>;</div><div class="line">    m[<span class="number">0</span>][<span class="number">1</span>] = newUp.x;</div><div class="line">    m[<span class="number">1</span>][<span class="number">1</span>] = newUp.y;</div><div class="line">    m[<span class="number">2</span>][<span class="number">1</span>] = newUp.z;</div><div class="line">    m[<span class="number">3</span>][<span class="number">1</span>] = <span class="number">0.</span>;</div><div class="line">    m[<span class="number">0</span>][<span class="number">2</span>] = dir.x;</div><div class="line">    m[<span class="number">1</span>][<span class="number">2</span>] = dir.y;</div><div class="line">    m[<span class="number">2</span>][<span class="number">2</span>] = dir.z;</div><div class="line">    m[<span class="number">3</span>][<span class="number">2</span>] = <span class="number">0.</span>;</div></pre></td></tr></table></figure></p>
+<h2 id="2-8-变换的应用-P114"><a href="#2-8-变换的应用-P114" class="headerlink" title="2.8 变换的应用 P114"></a>2.8 变换的应用 P114</h2><p>PBRT中重载了操作符()，因此允许下述这种比较舒服的方式书写代码。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">Point P = ...;</div><div class="line">Transform T = ...;</div><div class="line">Point newP = T(P);</div></pre></td></tr></table></figure></p>
+<h3 id="2-8-1-点"><a href="#2-8-1-点" class="headerlink" title="2.8.1 点"></a>2.8.1 点</h3><p>所谓点的变换，是将三维笛卡尔坐标下的点转换为齐次坐标，之后与相应的矩阵相乘完成变换，最后将返回的结果转为点的笛卡尔坐标。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Inline Functions&gt; ≡</div><div class="line">    <span class="keyword">inline</span> Point Transform::<span class="keyword">operator</span>()(<span class="keyword">const</span> Point &amp;pt) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> x = pt.x, y = pt.y, z = pt.z;</div><div class="line">        <span class="keyword">float</span> xp = m.m[<span class="number">0</span>][<span class="number">0</span>]*x + m.m[<span class="number">0</span>][<span class="number">1</span>]*y + m.m[<span class="number">0</span>][<span class="number">2</span>]*z + m.m[<span class="number">0</span>][<span class="number">3</span>];</div><div class="line">        <span class="keyword">float</span> yp = m.m[<span class="number">1</span>][<span class="number">0</span>]*x + m.m[<span class="number">1</span>][<span class="number">1</span>]*y + m.m[<span class="number">1</span>][<span class="number">2</span>]*z + m.m[<span class="number">1</span>][<span class="number">3</span>];</div><div class="line">        <span class="keyword">float</span> zp = m.m[<span class="number">2</span>][<span class="number">0</span>]*x + m.m[<span class="number">2</span>][<span class="number">1</span>]*y + m.m[<span class="number">2</span>][<span class="number">2</span>]*z + m.m[<span class="number">2</span>][<span class="number">3</span>];</div><div class="line">        <span class="keyword">float</span> wp = m.m[<span class="number">3</span>][<span class="number">0</span>]*x + m.m[<span class="number">3</span>][<span class="number">1</span>]*y + m.m[<span class="number">3</span>][<span class="number">2</span>]*z + m.m[<span class="number">3</span>][<span class="number">3</span>];</div><div class="line">        <span class="keyword">if</span> (wp == <span class="number">1.</span>)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> Point(xp, yp, zp);</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">else</span></div><div class="line">        &#123;</div><div class="line">        <span class="keyword">return</span> Point(xp, yp, zp)/wp;</div><div class="line">        &#125;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>此外，系统还提供了一个函数允许传入的参数为储存结果的指针。这将节省从栈上返回数据的开销。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Inline Functions&gt; +≡</div><div class="line">    <span class="keyword">inline</span> <span class="keyword">void</span> Transform::<span class="keyword">operator</span>()(<span class="keyword">const</span> Point &amp;pt, Point *ptrans) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> x = pt.x, y = pt.y, z = pt.z;</div><div class="line">        ptrans-&gt;x = m.m[<span class="number">0</span>][<span class="number">0</span>]*x + m.m[<span class="number">0</span>][<span class="number">1</span>]*y + m.m[<span class="number">0</span>][<span class="number">2</span>]*z + m.m[<span class="number">0</span>][<span class="number">3</span>];</div><div class="line">        ptrans-&gt;y = m.m[<span class="number">1</span>][<span class="number">0</span>]*x + m.m[<span class="number">1</span>][<span class="number">1</span>]*y + m.m[<span class="number">1</span>][<span class="number">2</span>]*z + m.m[<span class="number">1</span>][<span class="number">3</span>];</div><div class="line">        ptrans-&gt;z = m.m[<span class="number">2</span>][<span class="number">0</span>]*x + m.m[<span class="number">2</span>][<span class="number">1</span>]*y + m.m[<span class="number">2</span>][<span class="number">2</span>]*z + m.m[<span class="number">2</span>][<span class="number">3</span>];</div><div class="line">        <span class="keyword">float</span> w = m.m[<span class="number">3</span>][<span class="number">0</span>]*x + m.m[<span class="number">3</span>][<span class="number">1</span>]*y + m.m[<span class="number">3</span>][<span class="number">2</span>]*z + m.m[<span class="number">3</span>][<span class="number">3</span>];</div><div class="line">        <span class="keyword">if</span> (w != <span class="number">1.</span>)</div><div class="line">        &#123;</div><div class="line">        *ptrans /= w;</div><div class="line">        &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<h3 id="2-8-2-向量"><a href="#2-8-2-向量" class="headerlink" title="2.8.2 向量"></a>2.8.2 向量</h3><p>向量的处理同上。只不过不需要考虑w分量，有所简化。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Inline Functions&gt; +≡</div><div class="line">    <span class="keyword">inline</span> Vector Transform::<span class="keyword">operator</span>()(<span class="keyword">const</span> Vector &amp;v) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> x = v.x, y = v.y, z = v.z;</div><div class="line">        <span class="keyword">return</span> Vector(m.m[<span class="number">0</span>][<span class="number">0</span>]*x + m.m[<span class="number">0</span>][<span class="number">1</span>]*y + m.m[<span class="number">0</span>][<span class="number">2</span>]*z,</div><div class="line">                      m.m[<span class="number">1</span>][<span class="number">0</span>]*x + m.m[<span class="number">1</span>][<span class="number">1</span>]*y + m.m[<span class="number">1</span>][<span class="number">2</span>]*z,</div><div class="line">                      m.m[<span class="number">2</span>][<span class="number">0</span>]*x + m.m[<span class="number">2</span>][<span class="number">1</span>]*y + m.m[<span class="number">2</span>][<span class="number">2</span>]*z);</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>此外，依旧提供了传入指针的变换函数，同理便不再赘述。</p>
+<h3 id="2-8-3-法线"><a href="#2-8-3-法线" class="headerlink" title="2.8.3 法线"></a>2.8.3 法线</h3><p>法线的变换与向量不同，后者不能保证变换后依旧继承垂直性。<br>因为：<br>$$n·t=0=n{‘}t{‘}=(Sn)(Mt)=n^{T}S^{T}Mt$$<br>$$S=M^{-1^T}$$<br>所以：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Inline Functions&gt; +≡</div><div class="line">    <span class="keyword">inline</span> Normal Transform::<span class="keyword">operator</span>()(<span class="keyword">const</span> Normal &amp;n) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> x = n.x, y = n.y, z = n.z;</div><div class="line">        <span class="keyword">return</span> Normal(mInv.m[<span class="number">0</span>][<span class="number">0</span>]*x + mInv.m[<span class="number">1</span>][<span class="number">0</span>]*y + mInv.m[<span class="number">2</span>][<span class="number">0</span>]*z,</div><div class="line">                      mInv.m[<span class="number">0</span>][<span class="number">1</span>]*x + mInv.m[<span class="number">1</span>][<span class="number">1</span>]*y + mInv.m[<span class="number">2</span>][<span class="number">1</span>]*z,</div><div class="line">                      mInv.m[<span class="number">0</span>][<span class="number">2</span>]*x + mInv.m[<span class="number">1</span>][<span class="number">2</span>]*y + mInv.m[<span class="number">2</span>][<span class="number">2</span>]*z);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="2-8-4-光线"><a href="#2-8-4-光线" class="headerlink" title="2.8.4 光线"></a>2.8.4 光线</h3><p>只需改变原点和方向，拷贝其它的数据成员。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Inline Functions&gt; +=</div><div class="line">    <span class="keyword">inline</span> Ray Transform::<span class="keyword">operator</span>() (<span class="keyword">const</span> Ray &amp;r) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        Ray ret;</div><div class="line">        (*<span class="keyword">this</span>)(r<span class="number">.0</span>, &amp;ret.o);</div><div class="line">        (*<span class="keyword">this</span>)(r.d, &amp;ret.d);</div><div class="line">        ret.mint = r.mint;</div><div class="line">        ret.maxt = r.maxt;</div><div class="line">        ret.time = r.time;</div><div class="line">        <span class="keyword">return</span> ret;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="2-8-5-包围盒"><a href="#2-8-5-包围盒" class="headerlink" title="2.8.5 包围盒"></a>2.8.5 包围盒</h3><p>整体转移八个顶点，之后重新计算盒子。<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Method Definitions&gt; +≡</div><div class="line">    BBox Transform::operator()(const BBox &amp;b) const</div><div class="line">    &#123;</div><div class="line">        const Transform &amp;M = *this;</div><div class="line">        BBox ret( M(Point(b.pMin.x, b.pMin.y, b.pMin.z)));</div><div class="line">        ret = Union(ret, M(Point(b.pMax.x, b.pMin.y, b.pMin.z)));</div><div class="line">        ret = Union(ret, M(Point(b.pMin.x, b.pMax.y, b.pMin.z)));</div><div class="line">        ret = Union(ret, M(Point(b.pMin.x, b.pMin.y, b.pMax.z)));</div><div class="line">        ret = Union(ret, M(Point(b.pMin.x, b.pMax.y, b.pMax.z)));</div><div class="line">        ret = Union(ret, M(Point(b.pMax.x, b.pMax.y, b.pMin.z)));</div><div class="line">        ret = Union(ret, M(Point(b.pMax.x, b.pMin.y, b.pMax.z)));</div><div class="line">        ret = Union(ret, M(Point(b.pMax.x, b.pMax.y, b.pMax.z)));</div><div class="line">        return ret;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>当然，有更优雅的方式。</p>
+<h3 id="2-8-6-复合变换"><a href="#2-8-6-复合变换" class="headerlink" title="2.8.6 复合变换"></a>2.8.6 复合变换</h3><p>重载操作符*完成矩阵乘法。前文中每次产生新的矩阵时都会附带计算出其逆，这次自然也不例外。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Method Definitions&gt; +≡</div><div class="line">    Transform Transform::<span class="keyword">operator</span>*(<span class="keyword">const</span> Transform &amp;t2) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        Matrix4x4 m1 = Matrix4x4::Mul(m, t2.m);</div><div class="line">        Matrix4x4 m2 = Matrix4x4::Mul(t2.mInv, mInv);</div><div class="line">        <span class="keyword">return</span> Transform(m1, m2);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="2-8-7-变换与手性坐标系"><a href="#2-8-7-变换与手性坐标系" class="headerlink" title="2.8.7 变换与手性坐标系"></a>2.8.7 变换与手性坐标系</h3><p>有些变换会涉及到左右手坐标系的变化。有时需要判断变换是否改变了左右手坐标系，特别是对于那些表面法向量垂直向外的情况——当发生改变时，需要反转法向量的方向。<br>仅当变化矩阵左上角3X3的矩阵行列式值为负时，此变换会改变坐标系的手性。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Method Definitions&gt; +≡</div><div class="line">    <span class="keyword">bool</span> Transform::SwapsHandedness() <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> det = ((m.m[<span class="number">0</span>][<span class="number">0</span>] *</div><div class="line">                      (m.m[<span class="number">1</span>][<span class="number">1</span>] * m.m[<span class="number">2</span>][<span class="number">2</span>] -</div><div class="line">                       m.m[<span class="number">1</span>][<span class="number">2</span>] * m.m[<span class="number">2</span>][<span class="number">1</span>])) -</div><div class="line">                     (m.m[<span class="number">0</span>][<span class="number">1</span>] *</div><div class="line">                      (m.m[<span class="number">1</span>][<span class="number">0</span>] * m.m[<span class="number">2</span>][<span class="number">2</span>] -</div><div class="line">                       m.m[<span class="number">1</span>][<span class="number">2</span>] * m.m[<span class="number">2</span>][<span class="number">0</span>])) +</div><div class="line">                     (m.m[<span class="number">0</span>][<span class="number">2</span>] *</div><div class="line">                      (m.m[<span class="number">1</span>][<span class="number">0</span>] * m.m[<span class="number">2</span>][<span class="number">1</span>] -</div><div class="line">                       m.m[<span class="number">1</span>][<span class="number">1</span>] * m.m[<span class="number">2</span>][<span class="number">0</span>])));</div><div class="line">        <span class="keyword">return</span> det &lt; <span class="number">0.f</span>;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h2 id="2-9-动画变换-P119"><a href="#2-9-动画变换-P119" class="headerlink" title="*2.9 动画变换 P119"></a>*2.9 动画变换 P119</h2><p>PBRT的相机和几何图元支持关键帧矩阵动画（Keyframe Matrix Animation），进而模仿对运动中物体拍照所呈现出的模糊效果。相比动画制作，关键帧矩阵插值在渲染中较简单。<br>PBRT所使用的变换插值方式基于矩阵分解（Matrix Decomposition）。给定任意变换矩阵M，将其分解为放缩（Scale）、旋转（Rotation）、平移（Translation）三阶段。<br>$$M=SRT$$<br>其中，每个阶段独立插值，之后通过矩阵乘法合并。</p>
+<h3 id="2-9-1-四元数"><a href="#2-9-1-四元数" class="headerlink" title="2.9.1 四元数"></a>2.9.1 四元数</h3><p>四元数是简单的超复数。<br>$$q=(x,y,z,w)=w+xi+yj+zk$$<br>其中，i、j、k均为虚数单位，其乘法不满足交换律：ij = k，ji = -k。四元数通常以如下形式表示。<br>$$q=(q_x,q_y,q_z,q<em>w)=(q</em>{xyz},q<em>w)$$<br>引入四元数的作用是处理旋转。给定单位向量轴u=（x，y，z），则四元数（$q</em>{xyz}\sin\theta,\cos\theta$）可用于表示点p沿轴u旋转2θ的角度。首先将点p扩展到四元数空间$q<em>p=(p</em>{xyz},0)$，之后通过下述公示得到旋转后的点p坐标。<br>$$p{‘}=qpq^{-1}$$<br>其中，四元数的逆为其共轭四元数除以四元数的模。<br>$$q^{-1}=\frac{q^*}{N(q)}=\frac{(-q_{xyz},w)}{\sqrt{x^2+y^2+z^2+w^2}}$$<br>四元数部分的详细实现收录于core/quaternion.h和core/quaternion.cpp。其默认构造函数初始化了一个单元四元数。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;Quaternion Public Methods&gt; ≡</div><div class="line">    Quaternion()</div><div class="line">    &#123;</div><div class="line">        v = Vector(<span class="number">0.</span>, <span class="number">0.</span>, <span class="number">0.</span>);</div><div class="line">        w = <span class="number">1.f</span>;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>类中使用运算符重载定义了四元数的基本运算，以及四元数的点积，正规化函数。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&lt;Quaternion Inline Functions&gt; ≡</div><div class="line">    <span class="function"><span class="keyword">inline</span> <span class="keyword">float</span> <span class="title">Dot</span><span class="params">(<span class="keyword">const</span> Quaternion &amp;q1, <span class="keyword">const</span> Quaternion &amp;q2)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> Dot(q1.v, q2.v) + q1.w * q2.w;</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">&lt;Quaternion Inline Functions&gt; +≡</div><div class="line">    <span class="function"><span class="keyword">inline</span> Quaternion <span class="title">Normalize</span><span class="params">(<span class="keyword">const</span> Quaternion &amp;q)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> q / sqrtf(Dot(q, q));</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>我们需要归纳出一个旋转矩阵M来完成上述公式的作用，即p’=Mp。推导过程只需利用四元数乘法展开，归纳合并，并用3X3矩阵表达。<br>$$M=\begin{pmatrix}<br>1-2(q_y^2+q_z^2) &amp; 2(q_xq_y+q_zq_w) &amp; 2q_xq_z-q_yq_w \<br>2(q_xq_y-q_zq_w) &amp; 1-2(q_x^2+q_z^2) &amp; 2(q_yq_z+q_xq_w) \<br>2(q_xq_z+q_yq_w) &amp; 2(q_yq_z-q_xq_w) &amp; 1-2(q_x^2+q_y^2)<br>\end{pmatrix}$$<br>这个矩阵被收纳入Quaternion::ToTransform()函数中。</p>
+<h3 id="2-9-2-四元数插值"><a href="#2-9-2-四元数插值" class="headerlink" title="2.9.2 四元数插值"></a>2.9.2 四元数插值</h3><p>函数Slerp()用于在两个四元数间使用球面线性插值法（Spherical Linear Interpolation）进行插值。此插值法以恒定的角速度在球面上沿着弧线运动。其几何方程如下。<br>$$slerp(q_1,q_2,t)=\frac{q_1\sin((1-t)\theta)+q_2\sin(t\theta)}{\sin\theta}$$<br>为理解此插值法，假设单位圆上有两向量v0，v1，其夹角为θ。设角θ’位于区间[0，θ]内，做v2垂直与v1。则对v0和v1间内任意向量v’，有v’ = v1cosθ’ + v2sinθ’。<br>$$q_3=q_2=(q_1·q_2)q_1$$<br>$$q{‘}=q_1\cos(\theta t)+q_3\sin(\theta t)$$<br>最后，给出伪码。Slerp()用于检测两个四元数是否接近平行。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">&lt;Quaternion Method Definitions&gt; ≡</div><div class="line">    <span class="function">Quaternion <span class="title">Slerp</span><span class="params">(<span class="keyword">float</span> t, <span class="keyword">const</span> Quaternion &amp;q1,</span></span></div><div class="line">                     <span class="keyword">const</span> Quaternion &amp;q2)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> cosTheta = Dot(q1, q2);</div><div class="line">        <span class="keyword">if</span> (cosTheta &gt; <span class="number">.9995</span>f)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> Normalize((<span class="number">1.f</span> - t) * q1 + t * q2);</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">else</span></div><div class="line">        &#123;</div><div class="line">            <span class="keyword">float</span> theta = acosf(Clamp(cosTheta, <span class="number">-1.</span>f, <span class="number">1.f</span>));</div><div class="line">            <span class="keyword">float</span> thetap = theta * t;</div><div class="line">            Quaternion qperp = Normalize(q2 - q1 * cosTheta);</div><div class="line">            <span class="keyword">return</span> q1 * cosf(thetap) + qperp * sinf(thetap);</div><div class="line">        &#125;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="2-9-3-AnimatedTransform的实现"><a href="#2-9-3-AnimatedTransform的实现" class="headerlink" title="2.9.3 AnimatedTransform的实现"></a>2.9.3 AnimatedTransform的实现</h3><p>有了上述为基础，可以实现AnimatedTransform，此类是关键帧变换插值的容器。它的构造函数中含有两个变换和变换有关的时间。其中，Decompose()完成了变换的分解。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">&lt;AnimatedTransform Public Methods&gt; ≡</div><div class="line">    AnimatedTransform(<span class="keyword">const</span> Transform *transform1, <span class="keyword">float</span> time1,</div><div class="line">                      <span class="keyword">const</span> Transform *transform2, <span class="keyword">float</span> time2)</div><div class="line">        : startTime(time1), endTime(time2),</div><div class="line">          startTransform(transform1), endTransform(transform2),</div><div class="line">          actuallyAnimated(*startTransform != *endTransform)</div><div class="line">    &#123;</div><div class="line">        Decompose(startTransform-&gt;m, &amp;T[<span class="number">0</span>], &amp;R[<span class="number">0</span>], &amp;S[<span class="number">0</span>]);</div><div class="line">        Decompose(endTransform-&gt;m, &amp;T[<span class="number">1</span>], &amp;R[<span class="number">1</span>], &amp;S[<span class="number">1</span>]);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&lt;AnimatedTransform Private Data&gt; ≡</div><div class="line">    <span class="keyword">const</span> <span class="keyword">float</span> startTime, endTime;</div><div class="line">    <span class="keyword">const</span> Transform *startTransform, *endTransform;</div><div class="line">    <span class="keyword">const</span> <span class="keyword">bool</span> actuallyAnimated;</div><div class="line">    Vector T[<span class="number">2</span>];</div><div class="line">    Quaternion R[<span class="number">2</span>];</div><div class="line">    Matrix4x4 S[<span class="number">2</span>];</div></pre></td></tr></table></figure></p>
+<p>下文将实现M=TRS的过程。注意，此处的S是一个广义上的scale，它代表了某（some）坐标系统下的放缩，不保证是当前坐标系。但无论如何，它都依旧可以被妥善的线性插值。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;AnimatedTransform Method Definitions&gt; ≡</div><div class="line">    <span class="keyword">void</span> AnimatedTransform::Decompose(<span class="keyword">const</span> Matrix4x4 &amp;m, Vector *T,</div><div class="line">                                      Quaternion *Rquat, Matrix4x4 *S)</div><div class="line">    &#123;</div><div class="line">        &lt;Extract translation T from transformation matrix <span class="number">97</span>&gt;</div><div class="line">        &lt;Compute <span class="keyword">new</span> transformation matrix M without translation <span class="number">97</span>&gt;</div><div class="line">        &lt;Extract rotation R from transformation matrix <span class="number">98</span>&gt;</div><div class="line">        &lt;Compute scale S <span class="keyword">using</span> rotation and original matrix <span class="number">98</span>&gt;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>从M中提取出平移矩阵是极为简单的。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;Extract translation T from transformation matrix ≡ <span class="number">97</span></div><div class="line">    T-&gt;x = m.m[<span class="number">0</span>][<span class="number">3</span>];</div><div class="line">    T-&gt;y = m.m[<span class="number">1</span>][<span class="number">3</span>];</div><div class="line">T-&gt;z = m.m[<span class="number">2</span>][<span class="number">3</span>];</div></pre></td></tr></table></figure></p>
+<p>因为前提是假设这为一个仿射变换（不考虑投影变换），在提取出平移之后，矩阵的其余信息集中在3X3的左上角。拷贝到新内存中，以便于进一步处理。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Compute <span class="keyword">new</span> transformation matrix M without translation&gt; ≡ <span class="number">97</span></div><div class="line">    Matrix4x4 M = m;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>; ++i)</div><div class="line">    &#123;</div><div class="line">        M.m[i][<span class="number">3</span>] = M.m[<span class="number">3</span>][i] = <span class="number">0.f</span>;</div><div class="line">    &#125;</div><div class="line">    M.m[<span class="number">3</span>][<span class="number">3</span>] = <span class="number">1.f</span>;</div></pre></td></tr></table></figure></p>
+<p>下一步在M中提取旋转分量。关键：极分解（Polar Decomposition）。如此迭代下去，直至收敛。旋转矩阵的结果就是它本身。<br>$$M_{i+1}=\frac{M_i+(M_i^T)^{-1}}{2}$$<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">&lt;Extract rotation R from transformation matrix&gt; ≡ <span class="number">97</span></div><div class="line">    <span class="keyword">float</span> norm;</div><div class="line">    <span class="keyword">int</span> count = <span class="number">0</span>;</div><div class="line">    Matrix4x4 R = M;</div><div class="line">    <span class="keyword">do</span></div><div class="line">    &#123;</div><div class="line">        &lt;Compute next matrix Rnext in series <span class="number">98</span>&gt;</div><div class="line">        &lt;Compute norm of difference between R and Rnext <span class="number">98</span>&gt;</div><div class="line">        R = Rnext;</div><div class="line">    &#125; <span class="keyword">while</span> (++count &lt; <span class="number">100</span> &amp;&amp; norm &gt; <span class="number">.0001</span>f);</div><div class="line">    *Rquat = Quaternion(R);</div><div class="line">    </div><div class="line">&lt;Compute next matrix Rnext in series&gt; ≡ <span class="number">98</span></div><div class="line">    Matrix4x4 Rnext;</div><div class="line">    Matrix4x4 Rit = Inverse(Transpose(R));</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">4</span>; ++i)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">4</span>; ++j)</div><div class="line">        &#123;</div><div class="line">            Rnext.m[i][j] = <span class="number">0.5f</span> * (R.m[i][j] + Rit.m[i][j]);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">&lt;Compute norm of difference between R and Rnext&gt; ≡ <span class="number">98</span></div><div class="line">    norm = <span class="number">0.f</span>;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>; ++i)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> n = fabsf(R.m[i][<span class="number">0</span>] - Rnext.m[i][<span class="number">0</span>]) +</div><div class="line">        fabsf(R.m[i][<span class="number">1</span>] - Rnext.m[i][<span class="number">1</span>]) +</div><div class="line">        fabsf(R.m[i][<span class="number">2</span>] - Rnext.m[i][<span class="number">2</span>]);</div><div class="line">        norm = max(norm, n);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>最后，左乘R的逆完成S的分离。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">&lt;Compute scale S <span class="keyword">using</span> rotation and original matrix&gt; ≡ <span class="number">97</span></div><div class="line">    *S = Matrix4x4::Mul(Inverse(R), M);</div></pre></td></tr></table></figure></p>
+<p>Interpolate()函数提供了在给定的时间插值替换变换矩阵。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;AnimatedTransform Method Definitions&gt; +≡</div><div class="line">    <span class="keyword">void</span> AnimatedTransform::Interpolate(<span class="keyword">float</span> time, Transform *t) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        &lt;Handle boundary conditions <span class="keyword">for</span> matrix interpolation <span class="number">99</span>&gt;</div><div class="line">        <span class="keyword">float</span> dt = (time - startTime) / (endTime - startTime);</div><div class="line">        &lt;Interpolate translation at dt <span class="number">99</span>&gt;</div><div class="line">        &lt;Interpolate rotation at dt <span class="number">99</span>&gt;</div><div class="line">        &lt;Interpolate scale at dt <span class="number">99</span>&gt;</div><div class="line">        &lt;Compute interpolated matrix as product of interpolated components <span class="number">100</span>&gt;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>如果给定的时间值在两个变换的时间值区间之外，若超出范围则返回合适的边界。自然，构造函数有必要检测区间本身是是否合法，若两时间值相等，则无插值的必要。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&lt;Handle boundary conditions <span class="keyword">for</span> matrix interpolation&gt; ≡ <span class="number">99</span></div><div class="line">    <span class="keyword">if</span> (!actuallyAnimated || time &lt;= startTime)</div><div class="line">    &#123;</div><div class="line">        *t = *startTransform;</div><div class="line">        <span class="keyword">return</span>;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">if</span> (time &gt;= endTime)</div><div class="line">    &#123;</div><div class="line">        *t = *endTransform;</div><div class="line">        <span class="keyword">return</span>;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>之后，分别插值三个矩阵。平移矩阵线性插值，旋转矩阵使用Slerp()函数，放缩矩阵按照每个元素暴力插入。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">&lt;Interpolate translation at dt&gt; ≡ <span class="number">99</span></div><div class="line">    Vector trans = (<span class="number">1.f</span> - dt) * T[<span class="number">0</span>] + dt * T[<span class="number">1</span>];</div><div class="line"></div><div class="line">&lt;Interpolate rotation at dt&gt; ≡ <span class="number">99</span></div><div class="line">    Quaternion rotate = Slerp(dt, R[<span class="number">0</span>], R[<span class="number">1</span>]);</div><div class="line"></div><div class="line">&lt;Interpolate scale at dt&gt; ≡ <span class="number">99</span></div><div class="line">    Matrix4x4 scale;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>; ++i)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">3</span>; ++j)</div><div class="line">        &#123;</div><div class="line">            scale.m[i][j] = Lerp(dt, S[<span class="number">0</span>].m[i][j], S[<span class="number">1</span>].m[i][j]);</div><div class="line">        &#125;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>最后，整合三矩阵。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">&lt;Compute interpolated matrix as product of interpolated components&gt; ≡ <span class="number">99</span></div><div class="line">    *t = Translate(trans) * rotate.ToTransform() * Transform(scale);</div></pre></td></tr></table></figure></p>
+<p>AnimatedTransform额外提供了一些函数使用Points或是Vectors或是Ray中的时间值为Ray直接进行变换的插值。它们比AnimatedTransform::Interpolate()更加高效。函数AnimatedTransform::MotionBounds()提供了在时间区间内的动画包围盒，参数useInverse表示判定逆变换是否应用于包围盒。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">&lt;AnimatedTransform Method Definitions&gt; +≡</div><div class="line">    BBox AnimatedTransform::MotionBounds(<span class="keyword">const</span> BBox &amp;b,</div><div class="line">                                         <span class="keyword">bool</span> useInverse) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">if</span> (!actuallyAnimated)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> Inverse(*startTransform)(b);</div><div class="line">        &#125;</div><div class="line">        BBox ret;</div><div class="line">        <span class="keyword">const</span> <span class="keyword">int</span> nSteps = <span class="number">128</span>;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nSteps; ++i)</div><div class="line">        &#123;</div><div class="line">            Transform t;</div><div class="line">            <span class="keyword">float</span> time = Lerp(<span class="keyword">float</span>(i)/<span class="keyword">float</span>(nSteps<span class="number">-1</span>), startTime, endTime);</div><div class="line">            Interpolate(time, &amp;t);</div><div class="line">            <span class="keyword">if</span> (useInverse) t = Inverse(t);</div><div class="line">            ret = Union(ret, t(b));</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">return</span> ret;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h2 id="2-10-微分几何-P130"><a href="#2-10-微分几何-P130" class="headerlink" title="2.10 微分几何 P130"></a>2.10 微分几何 P130</h2><p>本章最后，介绍一个独立的几何结构用于描述点，特别是光线交点，落在平面上这一情况。这种抽象结构隐藏了具体的几何类型，却提供了完成着色和几何操作所足够的信息。DifferentialGeometry类实现了上述功能，其代码收录于core/diffgeom.h和core/diffgeom.cpp。<br>为支持计算，需要提供以下数据：</p>
+<ul>
+<li>交点p的三维坐标</li>
+<li>交点处的法线n</li>
+<li>面参数形式下的（u，v）坐标</li>
+<li>参数化的偏导数∂p/∂u和∂p/∂v</li>
+<li>描述法线改变的偏导数∂n/∂u和∂n/∂v</li>
+<li>指向微分几何体所在Shape的指针</li>
+</ul>
+<p>其中，∂p/∂u和∂p/∂v位于切平面上，但不要求正交，法线n可由二者叉乘得到。而∂n/∂u和∂n/∂v则记录了沿着平面移动u和v时曲面法线的微分变元（Differential Change）。<br>微分几何的前提是假定形体有参数化的描述——给定某个范围内的（u，v）值，曲面上存在一点p = f（u，v）与之对应。尽管不能保证任意平面都使用，但至少PBRT所提供的的形体都具备至少一个本地的参数描述。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&lt;DifferentialGeometry Declarations&gt; ≡</div><div class="line">    <span class="keyword">struct</span> DifferentialGeometry</div><div class="line">    &#123;</div><div class="line">        DifferentialGeometry()</div><div class="line">        &#123;</div><div class="line">            u = v = <span class="number">0.</span>;</div><div class="line">            shape = <span class="literal">NULL</span>;</div><div class="line">        &#125;</div><div class="line">        &lt;DifferentialGeometry Public Methods&gt;</div><div class="line">        &lt;DifferentialGeometry Public Data <span class="number">102</span>&gt;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<p>数据结构如下，前文已述。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;DifferentialGeometry Public Data&gt; ≡ <span class="number">102</span></div><div class="line">    Point p;</div><div class="line">    Normal nn;</div><div class="line">    <span class="keyword">float</span> u, v;</div><div class="line">    <span class="keyword">const</span> Shape *shape;</div><div class="line">    Vector dpdu, dpdv;</div><div class="line">    Normal dndu, dndv;</div></pre></td></tr></table></figure></p>
+<p>构造函数。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">&lt;DifferentialGeometry Method Definitions&gt; ≡</div><div class="line">    DifferentialGeometry::DifferentialGeometry(<span class="keyword">const</span> Point &amp;P,</div><div class="line">        <span class="keyword">const</span> Vector &amp;DPDU, <span class="keyword">const</span> Vector &amp;DPDV,</div><div class="line">        <span class="keyword">const</span> Normal &amp;DNDU, <span class="keyword">const</span> Normal &amp;DNDV,</div><div class="line">        <span class="keyword">float</span> uu, <span class="keyword">float</span> vv, <span class="keyword">const</span> Shape *sh)</div><div class="line">    : p(P), dpdu(DPDU), dpdv(DPDV), dndu(DNDU), dndv(DNDV)</div><div class="line">    &#123;</div><div class="line">        &lt;Initialize DifferentialGeometry from parameters <span class="number">102</span>&gt;</div><div class="line">        &lt;Adjust normal based on orientation and handedness <span class="number">103</span>&gt;</div><div class="line">    &#125;</div><div class="line">    &lt;Initialize DifferentialGeometry from parameter&gt; ≡ <span class="number">102</span></div><div class="line">    nn = Normal(Normalize(Cross(dpdu, dpdv)));</div><div class="line">    u = uu;</div><div class="line">    v = vv;</div><div class="line">    shape = sh;</div></pre></td></tr></table></figure></p>
+<p>稍有常识的人都知道，法线方向对于图形的命运有很大关系。PBRT的输入文件中提供了ReverseOrientation这一Flag作为法线反转的判定——当给定的Shape中含有此Flag时，处理法线。此外，前文已述，还要考虑到Shape的变换是否改变了坐标系的手性，如放缩变换S(1，1，-1）：<br>$$\begin{align<em>}<br>S(1,1,-1)\frac{\partial p}{\partial u}\times (1,1,-1)\frac{\partial p}{\partial v} &amp; = S(-1,-1,1)\frac{\partial p}{\partial u}\times \frac{\partial p}{\partial v}\<br>&amp; =S(-1,-1,1)n\<br>&amp; \not=S(1,1,-1)n<br>\end{align</em>}$$<br>二者存其一，反转法向量。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;Adjust normal based on orientation and handedness&gt; ≡ <span class="number">102</span></div><div class="line">    <span class="keyword">if</span> (shape &amp;&amp; (shape-&gt;ReverseOrientation ^ shape-&gt;TransformSwapsHandedness))</div><div class="line">    &#123;</div><div class="line">        nn *= <span class="number">-1.</span>f;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/CG/" rel="tag">#CG</a>
+          
+            <a href="/tags/PBRT/" rel="tag">#PBRT</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/08/10/pbrt-ch1/" rel="next" title="PBRT 章节1 引言">
+                <i class="fa fa-chevron-left"></i> PBRT 章节1 引言
+              </a>
+            
+          </div>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel ">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.png"
+               alt="Sulpures" />
+          <p class="site-author-name" itemprop="name">Sulpures</p>
+          <p class="site-description motion-element" itemprop="description">「今せぇいっぱい生きよう」</p>
+        </div>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">3</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">1</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+            
+              
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#2-1-坐标系统-P84"><span class="nav-number">1.</span> <span class="nav-text">2.1 坐标系统 P84</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-1-左手坐标系"><span class="nav-number">1.1.</span> <span class="nav-text">2.1.1 左手坐标系</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-2-向量-P86"><span class="nav-number">2.</span> <span class="nav-text">2.2 向量 P86</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-1-加减"><span class="nav-number">2.1.</span> <span class="nav-text">2.2.1 加减</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-2-乘除"><span class="nav-number">2.2.</span> <span class="nav-text">2.2.2 乘除</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-3-点乘与叉乘"><span class="nav-number">2.3.</span> <span class="nav-text">2.2.3 点乘与叉乘</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-4-正规化"><span class="nav-number">2.4.</span> <span class="nav-text">2.2.4 正规化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-5-向量建立坐标系"><span class="nav-number">2.5.</span> <span class="nav-text">2.2.5 向量建立坐标系</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-3-点-P92"><span class="nav-number">3.</span> <span class="nav-text">2.3 点 P92</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-4-法线-P94"><span class="nav-number">4.</span> <span class="nav-text">2.4 法线 P94</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-5-光线-P95"><span class="nav-number">5.</span> <span class="nav-text">2.5 光线 P95</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-5-1-光线微分"><span class="nav-number">5.1.</span> <span class="nav-text">2.5.1 光线微分</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-6-三维包围盒-P99"><span class="nav-number">6.</span> <span class="nav-text">2.6 三维包围盒 P99</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-7-变换-P103"><span class="nav-number">7.</span> <span class="nav-text">2.7 变换 P103</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-7-1-齐次坐标"><span class="nav-number">7.1.</span> <span class="nav-text">2.7.1 齐次坐标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-7-2-基本操作"><span class="nav-number">7.2.</span> <span class="nav-text">2.7.2 基本操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-7-3-平移变换"><span class="nav-number">7.3.</span> <span class="nav-text">2.7.3 平移变换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-7-4-伸缩变换"><span class="nav-number">7.4.</span> <span class="nav-text">2.7.4 伸缩变换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-7-5-x，y，z轴的旋转变换"><span class="nav-number">7.5.</span> <span class="nav-text">2.7.5 x，y，z轴的旋转变换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-7-6-任意轴的旋转变换"><span class="nav-number">7.6.</span> <span class="nav-text">2.7.6 任意轴的旋转变换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-7-7观察变换"><span class="nav-number">7.7.</span> <span class="nav-text">2.7.7观察变换</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-8-变换的应用-P114"><span class="nav-number">8.</span> <span class="nav-text">2.8 变换的应用 P114</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-8-1-点"><span class="nav-number">8.1.</span> <span class="nav-text">2.8.1 点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-8-2-向量"><span class="nav-number">8.2.</span> <span class="nav-text">2.8.2 向量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-8-3-法线"><span class="nav-number">8.3.</span> <span class="nav-text">2.8.3 法线</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-8-4-光线"><span class="nav-number">8.4.</span> <span class="nav-text">2.8.4 光线</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-8-5-包围盒"><span class="nav-number">8.5.</span> <span class="nav-text">2.8.5 包围盒</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-8-6-复合变换"><span class="nav-number">8.6.</span> <span class="nav-text">2.8.6 复合变换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-8-7-变换与手性坐标系"><span class="nav-number">8.7.</span> <span class="nav-text">2.8.7 变换与手性坐标系</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-9-动画变换-P119"><span class="nav-number">9.</span> <span class="nav-text">*2.9 动画变换 P119</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-9-1-四元数"><span class="nav-number">9.1.</span> <span class="nav-text">2.9.1 四元数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-9-2-四元数插值"><span class="nav-number">9.2.</span> <span class="nav-text">2.9.2 四元数插值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-9-3-AnimatedTransform的实现"><span class="nav-number">9.3.</span> <span class="nav-text">2.9.3 AnimatedTransform的实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-10-微分几何-P130"><span class="nav-number">10.</span> <span class="nav-text">2.10 微分几何 P130</span></a></li></ol></div>
+            
+          </div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2016</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Sulpures</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/vendors/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.0.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.0.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.0.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.0.1"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+  
+  
+
+  
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+        processEscapes: true,
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+  </script>
+
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for (i=0; i < all.length; i += 1) {
+        all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+    });
+  </script>
+  <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+  
+
+  
+
+</body>
+</html>
