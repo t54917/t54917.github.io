@@ -1,0 +1,670 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/vendors/font-awesome/css/font-awesome.min.css?v=4.4.0" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.0.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="CG,PBRT," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.0.1" />
+
+
+
+
+
+
+<meta name="description" content="为了精确的描述光照和图像采用，必须引入辐射度学（Radiometry）。辐射度学主要研究环境中电磁辐射的传播，而渲染只对波长在370nm到730nm之间的可见光感兴趣，低端的波长（大约400nm）对应于蓝光，中端的波长（大约550nm）对应于绿光，高端的波长（大约650nm）对应于红光。本章介绍四个关键量：辐射通量（Flux)，辐射强度（Intensity），辐射照度（Irradiance）和辐射">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PBRT 章节4 颜色与辐射度学">
+<meta property="og:url" content="http://sulpures.me/2016/09/04/pbrt-ch5/index.html">
+<meta property="og:site_name" content="僕だけ居る">
+<meta property="og:description" content="为了精确的描述光照和图像采用，必须引入辐射度学（Radiometry）。辐射度学主要研究环境中电磁辐射的传播，而渲染只对波长在370nm到730nm之间的可见光感兴趣，低端的波长（大约400nm）对应于蓝光，中端的波长（大约550nm）对应于绿光，高端的波长（大约650nm）对应于红光。本章介绍四个关键量：辐射通量（Flux)，辐射强度（Intensity），辐射照度（Irradiance）和辐射">
+<meta property="og:updated_time" content="2016-09-04T15:48:54.115Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="PBRT 章节4 颜色与辐射度学">
+<meta name="twitter:description" content="为了精确的描述光照和图像采用，必须引入辐射度学（Radiometry）。辐射度学主要研究环境中电磁辐射的传播，而渲染只对波长在370nm到730nm之间的可见光感兴趣，低端的波长（大约400nm）对应于蓝光，中端的波长（大约550nm）对应于绿光，高端的波长（大约650nm）对应于红光。本章介绍四个关键量：辐射通量（Flux)，辐射强度（Intensity），辐射照度（Irradiance）和辐射">
+
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: 0,
+      author: '博主'
+    }
+  };
+</script>
+
+
+
+
+  <link rel="canonical" href="http://sulpures.me/2016/09/04/pbrt-ch5/"/>
+
+  <title> PBRT 章节4 颜色与辐射度学 | 僕だけ居る </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">僕だけ居る</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+  <p class="site-subtitle"></p>
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                PBRT 章节4 颜色与辐射度学
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            <span class="post-meta-item-icon">
+              <i class="fa fa-calendar-o"></i>
+            </span>
+            <span class="post-meta-item-text">发表于</span>
+            <time itemprop="dateCreated" datetime="2016-09-04T23:48:49+08:00" content="2016-09-04">
+              2016-09-04
+            </time>
+          </span>
+
+          
+            <span class="post-category" >
+              &nbsp; | &nbsp;
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                  <a href="/categories/Graphics/" itemprop="url" rel="index">
+                    <span itemprop="name">Graphics</span>
+                  </a>
+                </span>
+
+                
+                
+
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+
+          
+          
+
+          
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>为了精确的描述光照和图像采用，必须引入辐射度学（Radiometry）。辐射度学主要研究环境中电磁辐射的传播，而渲染只对波长在370nm到730nm之间的可见光感兴趣，低端的波长（大约400nm）对应于蓝光，中端的波长（大约550nm）对应于绿光，高端的波长（大约650nm）对应于红光。<br>本章介绍四个关键量：辐射通量（Flux)，辐射强度（Intensity），辐射照度（Irradiance）和辐射亮度（Radiance）。这些量可以由光谱功率分布（Spectral Power Distribution，SPD）定义。SPD是关于波长的分布函数，描述了每个波长上光的总量值。</p>
+<h2 id="5-1-光谱表示-P290"><a href="#5-1-光谱表示-P290" class="headerlink" title="5.1 光谱表示 P290"></a>5.1 光谱表示 P290</h2><p>现实世界中物体的SPD是很复杂的，而在渲染中SPD的相关计算需要一个简洁、高效、精确的函数来代表。为此，必须在质量上做出牺牲。这类问题的研究通常起始于寻找能够代表SPD的基函数。基函数用于把无限空间中可能的SPD映射低维空间下的几个实数系数ci。例如，给定一常量基函数B(λ) = 1，任一SPD都可通过一个等同于其平均值的单个系数c，近似表示为基函数的形式，即cB(λ) = c。<br>图形学中有许多为光谱表示提供基函数的研究。本章介绍PBRT中两种不同的光谱表示方式：其一，RGBSpectrum，沿袭图形学中典型的方式，使用RGB颜色系数代表SPD；其二，SampledSpectrum，使用一定波长范围内的一组采样点表示光谱。</p>
+<h3 id="5-1-1-光谱类型"><a href="#5-1-1-光谱类型" class="headerlink" title="5.1.1 光谱类型"></a>5.1.1 光谱类型</h3><p>贯穿整个PBRT，涉及SPD的操作都要借助Spectrum类以及其重载来完成。Spectrum类隐藏了光谱表示的细节，如果要改变系统中的这类细节只需改变Spectrum类的实现，而无需改变其它的代码。具体实现在core/spectrum.h和core/spectrum.cpp中。而选择哪一种光谱表示方式定义在core/pbrt.h中，PBRT默认使用高效而不精确的RGB表示。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&lt;Global Forward Declarations&gt; ≡</div><div class="line">    <span class="keyword">typedef</span> RGBSpectrum Spectrum;</div><div class="line">    <span class="comment">// typedef SampledSpectrum Spectrum;</span></div></pre></td></tr></table></figure></p>
+<p>此处没有提供在运行时改变Spectrum选择的方式，也就是如果改变了实现方式，请重编译PBRT。优点在于，其一，很多Spectrum类中的函数可以内联，使系统的性能有实质性的提高；其二，系统中的结构体可以直接拥有Spectrum的实例，而不必在运行时动态分配内存。</p>
+<h3 id="5-1-2-CoefficientSpectrum的实现"><a href="#5-1-2-CoefficientSpectrum的实现" class="headerlink" title="5.1.2 CoefficientSpectrum的实现"></a>5.1.2 CoefficientSpectrum的实现</h3><p>光谱的两种表示方式都基于SPD上的采样数据。首先，定义CoefficientSpectrum模板类，表示由模板参数nSamples所提供的特殊样本数据。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;Spectrum Declarations&gt; ≡</div><div class="line">    <span class="keyword">template</span> &lt;<span class="keyword">int</span> nSamples&gt; <span class="keyword">class</span> CoefficientSpectrum</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;CoefficientSpectrum Public Methods <span class="number">264</span>&gt;</div><div class="line">    <span class="keyword">protected</span>:</div><div class="line">        &lt;CoefficientSpectrum Protected Data <span class="number">264</span>&gt;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<p>构造函数如下，使用穿过整个波长的常数初始化光谱。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&lt;CoefficientSpectrum Public Methods&gt; ≡ <span class="number">264</span></div><div class="line">    CoefficientSpectrum(<span class="keyword">float</span> v = <span class="number">0.f</span>)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nSamples; ++i)</div><div class="line">        &#123;</div><div class="line">            c[i] = v;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&lt;CoefficientSpectrum Protected Data&gt; ≡ <span class="number">264</span></div><div class="line">    <span class="keyword">float</span> c[nSamples];</div></pre></td></tr></table></figure></p>
+<p>Spectrum需要各种各样的重载，例如光谱的相加。对于采样表示来说，不过是讲对应的采样值相加而已。同样，减乘除等大多同理，不再赘述。<br>有时常需要知道是否光谱处处为零。如果是，那么面上反射比为零，光线传输函数可以避免计算此面的反射光线。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">&lt;CoefficientSpectrum Public Methods&gt; +≡ <span class="number">264</span></div><div class="line">    <span class="function"><span class="keyword">bool</span> <span class="title">IsBlack</span><span class="params">()</span> <span class="keyword">const</span> </span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nSamples; ++i)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">if</span> (c[i] != <span class="number">0.</span>) </div><div class="line">            &#123;</div><div class="line">                <span class="keyword">return</span> <span class="literal">false</span>;</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</div><div class="line">    &#125;</div><div class="line">```han'shu</div><div class="line">Spectrum和CoefficientSpectrum的实现必须提供一些数学相关的函数，如计算光谱的平方根或是几次幂。其中一些计算方法位于章节<span class="number">8</span>的Fresnel类中。另一个频繁使用的函数是在两个SPD之间由参数t进行线性插值。</div><div class="line">```CPP</div><div class="line">&lt;Spectrum Inline Functions&gt; ≡</div><div class="line">    <span class="function"><span class="keyword">inline</span> Spectrum <span class="title">Lerp</span><span class="params">(<span class="keyword">float</span> t, <span class="keyword">const</span> Spectrum &amp;s1, <span class="keyword">const</span> Spectrum &amp;s2)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> (<span class="number">1.f</span> - t) * s1 + t * s2;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>在图像处理流水线中可能会用到压缩光谱范围的函数，以确保其在某个合法范围之内。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;CoefficientSpectrum Public Methods&gt; +≡ <span class="number">264</span></div><div class="line">    <span class="function">CoefficientSpectrum <span class="title">Clamp</span><span class="params">(<span class="keyword">float</span> low = <span class="number">0</span>, <span class="keyword">float</span> high = INFINITY)</span> <span class="keyword">const</span></span></div><div class="line">    &#123;</div><div class="line">        CoefficientSpectrum ret;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nSamples; ++i)</div><div class="line">        &#123;</div><div class="line">            ret.c[i] = ::Clamp(c[i], low, high);</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">return</span> ret;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>最后，提供断言检查是否存在采样值是NaN的情况，前几章提到过类似的实现。</p>
+<h2 id="5-2-SampledSpectrum类-P295"><a href="#5-2-SampledSpectrum类-P295" class="headerlink" title="5.2 SampledSpectrum类 P295"></a>5.2 SampledSpectrum类 P295</h2><p>SampledSpectrum类继承了CoefficientSpectrum，使用400nm-700nm波长范围之间的均匀采样点代表SPD。采样点30个，足矣在渲染中精确表示复杂的SPD，因此第一个采样点位于[400，410），第二个位于[400，410），以此类推。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">&lt;Spectrum Utility Declarations&gt; ≡</div><div class="line">    <span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">int</span> sampledLambdaStart = <span class="number">400</span>;</div><div class="line">    <span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">int</span> sampledLambdaEnd = <span class="number">700</span>;</div><div class="line">    <span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">int</span> nSpectralSamples = <span class="number">30</span>;</div><div class="line"></div><div class="line">&lt;Spectrum Declarations&gt; +≡</div><div class="line">    <span class="keyword">class</span> SampledSpectrum : <span class="keyword">public</span> CoefficientSpectrum&lt;nSpectralSamples&gt;</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;SampledSpectrum Public Methods <span class="number">266</span>&gt;</div><div class="line">    <span class="keyword">private</span>:</div><div class="line">        &lt;SampledSpectrum Private Data <span class="number">271</span>&gt;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<p>SampledSpectrum需要做的是初始化光谱数据和将SPD转换成另一种表示方式（如RGB）。而初始化本身是很简单的。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;SampledSpectrum Public Methods&gt; ≡ <span class="number">266</span></div><div class="line">SampledSpectrum(<span class="keyword">float</span> v = <span class="number">0.f</span>)</div><div class="line">&#123;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nSpectralSamples; ++i)</div><div class="line">    &#123;</div><div class="line">        c[i] = v;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>一般的，光谱采样数据会以（λi，vi）的形式给出，意味第i个采样在波长为λi处，其值为vi。通常采样间隔是不规则的。函数FromSampled()利用给定λ的采样值v定义分段线性函数来表示SPD。对于每个SPD，辅助函数AverageSpectrumSamples()负责计算波长区间范围内的线性分段函数平均值。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">&lt;SampledSpectrum Public Methods&gt; +≡ <span class="number">266</span></div><div class="line">    <span class="function"><span class="keyword">static</span> SampledSpectrum <span class="title">FromSampled</span><span class="params">(<span class="keyword">const</span> <span class="keyword">float</span> *lambda,</span></span></div><div class="line">                                       <span class="keyword">const</span> <span class="keyword">float</span> *v, <span class="keyword">int</span> n)</div><div class="line">    &#123;</div><div class="line">        &lt;Sort samples <span class="keyword">if</span> unordered, use sorted <span class="keyword">for</span> returned spectrum <span class="number">267</span>&gt;</div><div class="line">        SampledSpectrum r;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nSpectralSamples; ++i)</div><div class="line">        &#123;</div><div class="line">            &lt;Compute average value of given SPD over ith sample’s range <span class="number">267</span>&gt;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">return</span> r;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>AverageSpectrumSamples()需要按波长排序的（λi，vi）。函数SpectrumSamplesSorted()用于检查序列并排序。注意，另申请内存存储排序后的采样并且不要修改调用者传入的值。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;Sort samples <span class="keyword">if</span> unordered, use sorted <span class="keyword">for</span> returned spectrum&gt; ≡ <span class="number">267</span>, <span class="number">280</span></div><div class="line">    <span class="keyword">if</span> (!SpectrumSamplesSorted(lambda, v, n))</div><div class="line">    &#123;</div><div class="line">        <span class="built_in">vector</span>&lt;<span class="keyword">float</span>&gt; slambda(&amp;lambda[<span class="number">0</span>], &amp;lambda[n]);</div><div class="line">        <span class="built_in">vector</span>&lt;<span class="keyword">float</span>&gt; sv(&amp;v[<span class="number">0</span>], &amp;v[n]);</div><div class="line">        SortSpectrumSamples(&amp;slambda[<span class="number">0</span>], &amp;sv[<span class="number">0</span>], n);</div><div class="line">        <span class="keyword">return</span> FromSampled(&amp;slambda[<span class="number">0</span>], &amp;sv[<span class="number">0</span>], n);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>为计算第i个光谱采样值，需要计算波长区间λ0和λ1，之后平均。这是一个一维采样和重构的实例，更多细节详见章节7。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;Compute average value of given SPD over ith sample’s range&gt; ≡ <span class="number">267</span></div><div class="line">    <span class="keyword">float</span> lambda0 = Lerp(<span class="keyword">float</span>(i) / <span class="keyword">float</span>(nSpectralSamples),</div><div class="line">                         sampledLambdaStart, sampledLambdaEnd);</div><div class="line">    <span class="keyword">float</span> lambda1 = Lerp(<span class="keyword">float</span>(i+<span class="number">1</span>) / <span class="keyword">float</span>(nSpectralSamples),</div><div class="line">                         sampledLambdaStart, sampledLambdaEnd);</div><div class="line">    r.c[i] = AverageSpectrumSamples(lambda, v, n, lambda0, lambda1);</div></pre></td></tr></table></figure></p>
+<p>AverageSpectrumSamples()的思路是遍历每个范围内的线性片段，每个片段计算平均值，根据片段覆盖的区间范围放缩平均值，最后所有均值相加再除以整个区间范围。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&lt;Spectrum Method Definitions&gt; ≡</div><div class="line">    <span class="function"><span class="keyword">float</span> <span class="title">AverageSpectrumSamples</span><span class="params">(<span class="keyword">const</span> <span class="keyword">float</span> *lambda, <span class="keyword">const</span> <span class="keyword">float</span> *vals,</span></span></div><div class="line">                                 <span class="keyword">int</span> n, <span class="keyword">float</span> lambdaStart, <span class="keyword">float</span> lambdaEnd)</div><div class="line">    &#123;</div><div class="line">        &lt;Handle cases with out-of-bounds range or single sample only <span class="number">268</span>&gt;</div><div class="line">        <span class="keyword">float</span> sum = <span class="number">0.f</span>;</div><div class="line">        &lt;Add contributions of constant segments before/after samples <span class="number">269</span>&gt;</div><div class="line">        &lt;Advance to first relevant wavelength segment <span class="number">269</span>&gt;</div><div class="line">        &lt;Loop over wavelength sample segments and add contributions <span class="number">269</span>&gt;</div><div class="line">        <span class="keyword">return</span> sum / (lambdaEnd - lambdaStart);</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>首先考虑需要被平均的波长范围完全在所提供的范围之外和只有一个样本这两个边界条件。这里假设在给定范围外的SPD是常数（两个端点值）。如果这个缺省设定不符合特定的场景，那么请额外提供特殊的值。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">&lt;Handle cases with out-of-bounds range or single sample only&gt; ≡ <span class="number">268</span></div><div class="line">    <span class="keyword">if</span> (lambdaEnd &lt;= lambda[<span class="number">0</span>])</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> vals[<span class="number">0</span>];</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">if</span> (lambdaStart &gt;= lambda[n<span class="number">-1</span>])</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> vals[n<span class="number">-1</span>];</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">if</span> (n == <span class="number">1</span>)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> vals[<span class="number">0</span>];</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>处理边界情况之后，下一步检查需要求平均的区间是否超过了始末采样区间，如果是，用上述常数表示其贡献。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;Add contributions of constant segments before/after samples&gt; ≡ <span class="number">268</span></div><div class="line">    <span class="keyword">if</span> (lambdaStart &lt; lambda[<span class="number">0</span>])</div><div class="line">    &#123;</div><div class="line">        sum += vals[<span class="number">0</span>] * (lambda[<span class="number">0</span>] - lambdaStart);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">if</span> (lambdaEnd &gt; lambda[n<span class="number">-1</span>])</div><div class="line">    &#123;</div><div class="line">        sum += vals[n<span class="number">-1</span>] * (lambdaEnd - lambda[n<span class="number">-1</span>]);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>接下来，找到第一个开始插值的波长在哪个片段中。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;Advance to first relevant wavelength segment&gt; ≡ <span class="number">268</span></div><div class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</div><div class="line">    <span class="keyword">while</span> (lambdaStart &gt; lambda[i+<span class="number">1</span>])</div><div class="line">    &#123;</div><div class="line">        ++i;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>遍历每个平均范围重叠的线性片段，宏SEG_AVG()完成计算segStart到segEnd之间的平均值，而这两个值由INTERP()线性插值完成。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">&lt;Loop over wavelength sample segments and add contributions&gt; ≡ <span class="number">268</span></div><div class="line">    <span class="meta">#<span class="meta-keyword">define</span> INTERP(w, i) \</span></div><div class="line">        Lerp(((w) - lambda[i]) / (lambda[(i)+1] - lambda[i]), \</div><div class="line">             vals[i], vals[(i)+1])</div><div class="line">    <span class="meta">#<span class="meta-keyword">define</span> SEG_AVG(wl0, wl1, i) (0.5f * (INTERP(wl0, i) + INTERP(wl1, i)))</span></div><div class="line">    <span class="keyword">for</span> (; i+<span class="number">1</span> &lt; n &amp;&amp; lambdaEnd &gt;= lambda[i]; ++i)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> segStart = max(lambdaStart, lambda[i]);</div><div class="line">        <span class="keyword">float</span> segEnd = min(lambdaEnd, lambda[i+<span class="number">1</span>]);</div><div class="line">        sum += SEG_AVG(segStart, segEnd, i) * (segEnd - segStart);</div><div class="line">    &#125;</div><div class="line">    <span class="meta">#<span class="meta-keyword">undef</span> INTERP</span></div><div class="line">    <span class="meta">#<span class="meta-keyword">undef</span> SEG_AVG</span></div></pre></td></tr></table></figure></p>
+<h3 id="5-2-1-XYZ颜色"><a href="#5-2-1-XYZ颜色" class="headerlink" title="5.2.1 XYZ颜色"></a>5.2.1 XYZ颜色</h3><p>对于人的视觉来讲，所有可见的SPD可被三色理论通过三个浮点数xλ、yλ、zλ精确表示。给定一个SPD函数S(λ)，它们的值可由光谱配色曲线X(λ)、Y (λ)和Z(λ)（Spectral Matching Curves）通过积分得到。<br>$$x<em>\lambda=\frac{1}{\int Y(\lambda)d\lambda}\int</em>{\lambda}S(\lambda)X(\lambda)d\lambda\<br>y<em>\lambda=\frac{1}{\int Y(\lambda)d\lambda}\int</em>{\lambda}S(\lambda)Y(\lambda)d\lambda\<br>z<em>\lambda=\frac{1}{\int Y(\lambda)d\lambda}\int</em>{\lambda}S(\lambda)Z(\lambda)d\lambda$$<br>这些曲线是CIE所钦定的。对于显著不同分布的SPD可能含有相似的xλ、yλ、zλ值，对于人类观察者来说这些SPD可能含有相似的视觉效果。一对这样的光谱被称为条件等色（Metamers）。这样，可以采用精确的点来代表SPD。尽管XYZ的执行效果很好，但对光谱基函数的计算并不友好。PBRT提供了标准X(λ)、Y (λ)、Z(λ)响应曲线的采样值，从以1nm为增量从360nm一直到830nm。其中第i个采样点的波长通过CIE_lambda[i]来返回。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;Spectral Data Declarations&gt; ≡</div><div class="line">    <span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">int</span> nCIESamples = <span class="number">471</span>;</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> CIE_X[nCIESamples];</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> CIE_Y[nCIESamples];</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> CIE_Z[nCIESamples];</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> CIE_lambda[nCIESamples];</div></pre></td></tr></table></figure></p>
+<p>SampledSpectrum使用上述采样值在光谱表示中计算XYZ的匹配曲线。其中yint存储了在波长区间中Y的匹配曲线的积分，这个值可能会被用于全光谱和xλ、yλ、zλ系数的转换之中。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&lt;SampledSpectrum Private Data&gt; ≡ <span class="number">266</span></div><div class="line">    <span class="keyword">static</span> SampledSpectrum X, Y, Z;</div><div class="line">    <span class="keyword">static</span> <span class="keyword">float</span> yint;</div></pre></td></tr></table></figure></p>
+<p>函数SampledSpectrum::Init()完成了XYZ匹配曲线的计算，而这个函数被pbrtInit()调用。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;SampledSpectrum Public Methods&gt; +≡ <span class="number">266</span></div><div class="line">    <span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">Init</span><span class="params">()</span></span></div><div class="line">    &#123;</div><div class="line">        &lt;Compute XYZ matching functions <span class="keyword">for</span> SampledSpectrum <span class="number">272</span>&gt;</div><div class="line">        &lt;Compute RGB to spectrum functions <span class="keyword">for</span> SampledSpectrum&gt;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>给定SampledSpectrum波长范围和采样数，为每个采样点计算匹配函数的值只要解决计算采样点的波长范围这一个问题。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">&lt;Compute XYZ matching functions <span class="keyword">for</span> SampledSpectrum&gt; ≡ <span class="number">271</span></div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nSpectralSamples; ++i)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> wl0 = Lerp(<span class="keyword">float</span>(i) / <span class="keyword">float</span>(nSpectralSamples),</div><div class="line">                         sampledLambdaStart, sampledLambdaEnd);</div><div class="line">        <span class="keyword">float</span> wl1 = Lerp(<span class="keyword">float</span>(i+<span class="number">1</span>) / <span class="keyword">float</span>(nSpectralSamples),</div><div class="line">                         sampledLambdaStart, sampledLambdaEnd);</div><div class="line">        X.c[i] = AverageSpectrumSamples(CIE_lambda, CIE_X, nCIESamples,</div><div class="line">                                        wl0, wl1);</div><div class="line">        Y.c[i] = AverageSpectrumSamples(CIE_lambda, CIE_Y, nCIESamples,</div><div class="line">                                        wl0, wl1);</div><div class="line">        Z.c[i] = AverageSpectrumSamples(CIE_lambda, CIE_Z, nCIESamples,</div><div class="line">                                        wl0, wl1);</div><div class="line">        yint += Y.c[i];</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>PBRT中所有的Spectrum实现必须提供将Spectrum转变为（xλ，yλ，zλ）系数的函数。比如，这个函数将在图像上更新像素的过程中被调用。当Spectrum被提供给ImageFilm，ImageFilm的第一步就是将SPD转为XYZ，最终转为RGB值，这个值写入还是存储另当别论。SampledSpectrum采用黎曼和的方式计算上述三个积分式的值，如下。<br>$$x<em>{\lambda}\approx\frac{1}{\int Y(\lambda)d\lambda}\sum</em>{i}X_ic_i$$<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">&lt;SampledSpectrum Public Methods&gt; +≡ <span class="number">266</span></div><div class="line">    <span class="function"><span class="keyword">void</span> <span class="title">ToXYZ</span><span class="params">(<span class="keyword">float</span> xyz[<span class="number">3</span>])</span> <span class="keyword">const</span></span></div><div class="line">    &#123;</div><div class="line">        xyz[<span class="number">0</span>] = xyz[<span class="number">1</span>] = xyz[<span class="number">2</span>] = <span class="number">0.f</span>;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nSpectralSamples; ++i)</div><div class="line">        &#123;</div><div class="line">            xyz[<span class="number">0</span>] += X.c[i] * c[i];</div><div class="line">            xyz[<span class="number">1</span>] += Y.c[i] * c[i];</div><div class="line">            xyz[<span class="number">2</span>] += Z.c[i] * c[i];</div><div class="line">        &#125;</div><div class="line">        xyz[<span class="number">0</span>] /= yint;</div><div class="line">        xyz[<span class="number">1</span>] /= yint;</div><div class="line">        xyz[<span class="number">2</span>] /= yint;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>XYZ中的y坐标和亮度（Luminance）密切相关（关于Luminance更细节的解释见5.4.3）。为此有必要提供一个函数独立的计算y值，比如在计算光线在场景的运输过程时亮度是一个相对重要的量。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;SampledSpectrum Public Methods&gt; +≡ <span class="number">266</span></div><div class="line">    <span class="function"><span class="keyword">float</span> <span class="title">y</span><span class="params">()</span> <span class="keyword">const</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> yy = <span class="number">0.f</span>;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nSpectralSamples; ++i)</div><div class="line">        &#123;</div><div class="line">            yy += Y.c[i] * c[i];</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">return</span> yy / yint;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="5-2-2-RGB颜色"><a href="#5-2-2-RGB颜色" class="headerlink" title="5.2.2 RGB颜色"></a>5.2.2 RGB颜色</h3><p>给定SPD的（xλ，yλ，zλ），可以将它转换为RGB的系数形式。PBRT中这个转换程序基于一组为高清晰度电视定义的标准RGB光谱。给定光谱相应曲线R(λ)、G(λ)、B(λ)，可以通过计算SPD的响应曲线积分得到RGB的参数。<br>$$r=\int R(\lambda)S(\lambda)d\lambda=\int R(\lambda)(x<em>\lambda X(\lambda)+y</em>\lambda Y(\lambda)+z<em>\lambda Z(\lambda))d\lambda$$<br>其中积分中的R(λ)X(λ)可以由给定的响应曲线预先计算出来。用矩阵表示这个过程更直观一些。<br>$$\begin{bmatrix}r\g\b\end{bmatrix}=<br>\begin{pmatrix}\int R(\lambda)X(\lambda)d\lambda&amp;\int R(\lambda)Y(\lambda)d\lambda&amp;\int R(\lambda)Z(\lambda)d\lambda\\int G(\lambda)X(\lambda)d\lambda&amp;\int G(\lambda)Y(\lambda)d\lambda&amp;\int G(\lambda)Z(\lambda)d\lambda\\int B(\lambda)X(\lambda)d\lambda&amp;\int B(\lambda)Y(\lambda)d\lambda&amp;\int B(\lambda)Z(\lambda)d\lambda\end{pmatrix}<br>\begin{bmatrix}x</em>\lambda\y<em>\lambda\z</em>\lambda\end{bmatrix}$$</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Spectrum Utility Declarations&gt; +≡</div><div class="line">    <span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">XYZToRGB</span><span class="params">(<span class="keyword">const</span> <span class="keyword">float</span> xyz[<span class="number">3</span>], <span class="keyword">float</span> rgb[<span class="number">3</span>])</span></span></div><div class="line">    &#123;</div><div class="line">        rgb[<span class="number">0</span>] = <span class="number">3.240479f</span>*xyz[<span class="number">0</span>] - <span class="number">1.537150f</span>*xyz[<span class="number">1</span>] - <span class="number">0.498535f</span>*xyz[<span class="number">2</span>];</div><div class="line">        rgb[<span class="number">1</span>] = <span class="number">-0.969256</span>f*xyz[<span class="number">0</span>] + <span class="number">1.875991f</span>*xyz[<span class="number">1</span>] + <span class="number">0.041556f</span>*xyz[<span class="number">2</span>];</div><div class="line">        rgb[<span class="number">2</span>] = <span class="number">0.055648f</span>*xyz[<span class="number">0</span>] - <span class="number">0.204043f</span>*xyz[<span class="number">1</span>] + <span class="number">1.057311f</span>*xyz[<span class="number">2</span>];</div><div class="line">    &#125;</div></pre></td></tr></table></figure>
+<p>自然，这个矩阵的逆提供了将一组特别的RGB响应曲线转换到（xλ，yλ，zλ）系数的过程，这个在函数RGBToXYZ中得以实现。有了这些函数，一个SampledSpectrum可以转换到RGB可由Sampled2XYZ→XYZ2RGB来分布完成。一个RGBSpectrum结构就可由ToRGB()函数来创建。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;SampledSpectrum Public Methods&gt; +≡ <span class="number">266</span></div><div class="line">    <span class="function"><span class="keyword">void</span> <span class="title">ToRGB</span><span class="params">(<span class="keyword">float</span> rgb[<span class="number">3</span>])</span> <span class="keyword">const</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> xyz[<span class="number">3</span>];</div><div class="line">        ToXYZ(xyz);</div><div class="line">        XYZToRGB(xyz, rgb);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>但，将RGB或是XYZ值转换成SPD并不容易，这是一个具有高度非约束性的问题：可能由无数种满足条件的SPD供选择。这里有许多理想的标准：其一，若所有的RGB系数是相同的值，则结果SPD应该是不变的；其二，被计算出的SPD应该是平滑的，这符合现世的规律。这也解释了为什么以R(λ)、G(λ)和B(λ)的加权和求SPD并不是一个好的解决方式：这种方式得到的SPD往往是不规则的钉状函数图像。这里采用另一种方式，先分别计算出RGB三色各自的SPD，之后借助给定的RGB系数计算SPD加权和，再转换成RGB系数的形式。这个方式还有两种优化：其一，原色的和并不总是常数，用恒定的SPD去代表恒定的光谱；其二，两种原色得到的混合颜色比合并两原色对应的SPD更能代表平滑的SPD。下文中的矩阵存储了满足这些条件的SPD，其中RGB2SpectLambda[]存储量样本的波长。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;Spectral Data Declarations&gt; +≡</div><div class="line">    <span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">int</span> nRGB2SpectSamples = <span class="number">32</span>;</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> RGB2SpectLambda[nRGB2SpectSamples];</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> RGBRefl2SpectWhite[nRGB2SpectSamples];</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> RGBRefl2SpectCyan[nRGB2SpectSamples];</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> RGBRefl2SpectMagenta[nRGB2SpectSamples];</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> RGBRefl2SpectYellow[nRGB2SpectSamples];</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> RGBRefl2SpectRed[nRGB2SpectSamples];</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> RGBRefl2SpectGreen[nRGB2SpectSamples];</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> RGBRefl2SpectBlue[nRGB2SpectSamples];</div></pre></td></tr></table></figure></p>
+<p>对于给定了RGB的颜色描述的一个光源，转换表的选择会影响到最终的结果。比如说，一个光源应采用下述数据而不是上述数据。RGBIllum2Spect数组中使用D65的SPD，这是CIE基于正午阳光所制定的标准数据。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;Spectral Data Declarations&gt; +≡</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> RGBIllum2SpectWhite[nRGB2SpectSamples];</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> RGBIllum2SpectCyan[nRGB2SpectSamples];</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> RGBIllum2SpectMagenta[nRGB2SpectSamples];</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> RGBIllum2SpectYellow[nRGB2SpectSamples];</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> RGBIllum2SpectRed[nRGB2SpectSamples];</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> RGBIllum2SpectGreen[nRGB2SpectSamples];</div><div class="line">    <span class="keyword">extern</span> <span class="keyword">const</span> <span class="keyword">float</span> RGBIllum2SpectBlue[nRGB2SpectSamples];</div></pre></td></tr></table></figure></p>
+<p>将RGB计算为光谱函数调用SampledSpectrum::Init()来完成，通过对RGBRefl2Spect和RGBIllum2Spect的重采样完成了下述SampledSpectrum值的初始化。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;SampledSpectrum Private Data&gt; +≡</div><div class="line">    <span class="keyword">static</span> SampledSpectrum rgbRefl2SpectWhite, rgbRefl2SpectCyan;</div><div class="line">    <span class="keyword">static</span> SampledSpectrum rgbRefl2SpectMagenta, rgbRefl2SpectYellow;</div><div class="line">    <span class="keyword">static</span> SampledSpectrum rgbRefl2SpectRed, rgbRefl2SpectGreen;</div><div class="line">    <span class="keyword">static</span> SampledSpectrum rgbRefl2SpectBlue;</div><div class="line">    <span class="keyword">static</span> SampledSpectrum rgbIllum2SpectWhite, rgbIllum2SpectCyan;</div><div class="line">    <span class="keyword">static</span> SampledSpectrum rgbIllum2SpectMagenta, rgbIllum2SpectYellow;</div><div class="line">    <span class="keyword">static</span> SampledSpectrum rgbIllum2SpectRed, rgbIllum2SpectGreen;</div><div class="line">    <span class="keyword">static</span> SampledSpectrum rgbIllum2SpectBlue;</div></pre></td></tr></table></figure></p>
+<p>函数SampledSpectrum::FromRGB()完成了给定RGB值一个完成SPD的转换。除了需要RGB值，还需要一个枚举决定这个RGB表示的是光源还是表面反射光，而对应的rgbIllum2Spect或rgbRefl2Spect值将被这个转换所使用。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">&lt;Spectrum Utility Declarations&gt; +≡</div><div class="line">    <span class="keyword">enum</span> SpectrumType &#123; SPECTRUM_REFLECTANCE, SPECTRUM_ILLUMINANT &#125;;</div><div class="line">    </div><div class="line">&lt;Spectrum Method Definitions&gt; +≡</div><div class="line">SampledSpectrum SampledSpectrum::FromRGB(<span class="keyword">const</span> <span class="keyword">float</span> rgb[<span class="number">3</span>],</div><div class="line">                                         SpectrumType type)</div><div class="line">    &#123;</div><div class="line">        SampledSpectrum r;</div><div class="line">        <span class="keyword">if</span> (type == SPECTRUM_REFLECTANCE)</div><div class="line">        &#123;</div><div class="line">            &lt;Convert reflectance spectrum to RGB <span class="number">278</span>&gt;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">else</span></div><div class="line">        &#123;</div><div class="line">            &lt;Convert illuminant spectrum to RGB&gt;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">return</span> r.Clamp();</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>这里只给出反射光的转化过程，光源同理。首先，找出颜色数组rgb[]中最小值，假设其中红色最小，那么将红色值乘上rgbRefl2SpectWhite中白色光谱，作为最终结果的一部分。之后将RGB值处理为（0，g-r，b-r），之后比较g-r和b-r的值，这个值乘上蓝或绿的光谱，并入结果。最后剩下的是（0，g-b，0）或（0，0，b-g）。不管g-b或是b-g是否为零，转化都已完成。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">&lt;Compute reflectance SampledSpectrum with rgb[<span class="number">0</span>] as minimum&gt; ≡ <span class="number">278</span></div><div class="line">    r += rgb[<span class="number">0</span>] * rgbRefl2SpectWhite;</div><div class="line">    <span class="keyword">if</span> (rgb[<span class="number">1</span>] &lt;= rgb[<span class="number">2</span>])</div><div class="line">    &#123;</div><div class="line">        r += (rgb[<span class="number">1</span>] - rgb[<span class="number">0</span>]) * rgbRefl2SpectCyan;</div><div class="line">        r += (rgb[<span class="number">2</span>] - rgb[<span class="number">1</span>]) * rgbRefl2SpectBlue;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">else</span></div><div class="line">    &#123;</div><div class="line">        r += (rgb[<span class="number">2</span>] - rgb[<span class="number">0</span>]) * rgbRefl2SpectCyan;</div><div class="line">        r += (rgb[<span class="number">1</span>] - rgb[<span class="number">2</span>]) * rgbRefl2SpectGreen;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>同样XYZ2SPD，分解为XYZ2RGB和上述函数两步完成，函数FromXYZ()实现了它，不再赘述。最后，提供了使用RGBSpectrum实例为参数的SampledSpectrum构造函数。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Spectrum Method Definitions&gt; +≡</div><div class="line">    SampledSpectrum::SampledSpectrum(<span class="keyword">const</span> RGBSpectrum &amp;r, SpectrumType t)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> rgb[<span class="number">3</span>];</div><div class="line">        r.ToRGB(rgb);</div><div class="line">        *<span class="keyword">this</span> = SampledSpectrum::FromRGB(rgb, t);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h2 id="5-3-RGBSpectrum的实现-P308"><a href="#5-3-RGBSpectrum的实现-P308" class="headerlink" title="5.3 RGBSpectrum的实现 P308"></a>5.3 RGBSpectrum的实现 P308</h2><p>这里所实现的RGBSpectrum通过RGB加权和代表SPD。这里的定义是不清楚的：给定两个不同的显示器，让它们显示相同的RGB不一定会得到相同的SPD，因此为了在一组RGB中指定一个真实的SPD，必须知道显示器图元（Monitor Primaries）的定义，而这些信息往往不再RGB值中。RGB表示的优点是简便，易于计算和存储。RGBSpectrum同样继承自CoefficientSpectrum。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&lt;Spectrum Declarations&gt; +≡</div><div class="line">    <span class="keyword">class</span> RGBSpectrum : <span class="keyword">public</span> CoefficientSpectrum&lt;<span class="number">3</span>&gt;</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;RGBSpectrum Public Methods <span class="number">279</span>&gt;</div><div class="line">    &#125;;</div><div class="line"></div><div class="line">&lt;RGBSpectrum Public Methods&gt; ≡ <span class="number">279</span></div><div class="line">    RGBSpectrum(<span class="keyword">float</span> v = <span class="number">0.f</span>) : CoefficientSpectrum&lt;<span class="number">3</span>&gt;(v) &#123; &#125;</div><div class="line">    RGBSpectrum(<span class="keyword">const</span> CoefficientSpectrum&lt;<span class="number">3</span>&gt; &amp;v)</div><div class="line">        : CoefficientSpectrum&lt;<span class="number">3</span>&gt;(v) &#123; &#125;</div></pre></td></tr></table></figure></p>
+<p>RGBSpectrum继承了重载的运算操作，此外需要提供XYZ和RGB两个表达方式的转换，这很容易。FromRGB()将rgb[]中的数据转入RGBSpectrum中。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;RGBSpectrum Public Methods&gt; +≡ <span class="number">279</span></div><div class="line">    <span class="function"><span class="keyword">static</span> RGBSpectrum <span class="title">FromRGB</span><span class="params">(<span class="keyword">const</span> <span class="keyword">float</span> rgb[<span class="number">3</span>],</span></span></div><div class="line">        SpectrumType type = SPECTRUM_REFLECTANCE) </div><div class="line">    &#123;</div><div class="line">        RGBSpectrum s;</div><div class="line">        s.c[<span class="number">0</span>] = rgb[<span class="number">0</span>];</div><div class="line">        s.c[<span class="number">1</span>] = rgb[<span class="number">1</span>];</div><div class="line">        s.c[<span class="number">2</span>] = rgb[<span class="number">2</span>];</div><div class="line">        <span class="keyword">return</span> s;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>相似的，光谱表达必须提供将它转换为RGB的方式。对于RGBSpectrum，这个操作可以回避哪种RGB图元用于代表光谱分布的问题，直接返回RGB系数就好。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;RGBSpectrum Public Methods&gt; +≡ <span class="number">279</span></div><div class="line">    <span class="function"><span class="keyword">void</span> <span class="title">ToRGB</span><span class="params">(<span class="keyword">float</span> *rgb)</span> <span class="keyword">const</span></span></div><div class="line">    &#123;</div><div class="line">        rgb[<span class="number">0</span>] = c[<span class="number">0</span>];</div><div class="line">        rgb[<span class="number">1</span>] = c[<span class="number">1</span>];</div><div class="line">        rgb[<span class="number">2</span>] = c[<span class="number">2</span>];</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>所有的的光谱表示必须允许将它自己转换为一个RGBSpectrum对象，对于RGBSpectrum对象本身来说亦不例外，因此返回this指针。此外它的ToXYZ()、ToXYZ()、y()也不再赘述。<br>为从任意的采样SPD创建RGB光谱，FromSampled()提供了光谱到XYZ再到RGB的实现。它对分段线性光谱每1nm为一步采样，其中借用了辅助函数InterpolateSpectrumSamples()，从CIE的匹配函数中由波长找到对应值，并用此值计算XYZ的黎曼积分。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">&lt;RGBSpectrum Public Methods&gt; +≡ <span class="number">279</span></div><div class="line">    <span class="function"><span class="keyword">static</span> RGBSpectrum <span class="title">FromSampled</span><span class="params">(<span class="keyword">const</span> <span class="keyword">float</span> *lambda, <span class="keyword">const</span> <span class="keyword">float</span> *v,</span></span></div><div class="line">                                   <span class="keyword">int</span> n)</div><div class="line">    &#123;</div><div class="line">        &lt;Sort samples <span class="keyword">if</span> unordered, use sorted <span class="keyword">for</span> returned spectrum <span class="number">267</span>&gt;</div><div class="line">        <span class="keyword">float</span> xyz[<span class="number">3</span>] = &#123; <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span> &#125;;</div><div class="line">        <span class="keyword">float</span> yint = <span class="number">0.f</span>;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nCIESamples; ++i)</div><div class="line">        &#123;</div><div class="line">            yint += CIE_Y[i];</div><div class="line">            <span class="keyword">float</span> val = InterpolateSpectrumSamples(lambda, v, n,</div><div class="line">                                                   CIE_lambda[i]);</div><div class="line">            xyz[<span class="number">0</span>] += val * CIE_X[i];</div><div class="line">            xyz[<span class="number">1</span>] += val * CIE_Y[i];</div><div class="line">            xyz[<span class="number">2</span>] += val * CIE_Z[i];</div><div class="line">        &#125;</div><div class="line">        xyz[<span class="number">0</span>] /= yint;</div><div class="line">        xyz[<span class="number">1</span>] /= yint;</div><div class="line">        xyz[<span class="number">2</span>] /= yint;</div><div class="line">        <span class="keyword">return</span> FromXYZ(xyz);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>InterpolateSpectrumSamples()需要一组可能不均匀的样本集（λi，vi），然后返回给定波长λ和λ+1所对应的两个SPD值的线性插值结果。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">&lt;Spectrum Method Definitions&gt; +≡</div><div class="line">    <span class="function"><span class="keyword">float</span> <span class="title">InterpolateSpectrumSamples</span><span class="params">(<span class="keyword">const</span> <span class="keyword">float</span> *lambda, <span class="keyword">const</span> <span class="keyword">float</span> *vals,</span></span></div><div class="line">                                     <span class="keyword">int</span> n, <span class="keyword">float</span> l)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">if</span> (l &lt;= lambda[<span class="number">0</span>])</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> vals[<span class="number">0</span>];</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">if</span> (l &gt;= lambda[n<span class="number">-1</span>])</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> vals[n<span class="number">-1</span>];</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n<span class="number">-1</span>; ++i) </div><div class="line">        &#123;</div><div class="line">            <span class="keyword">if</span> (l &gt;= lambda[i] &amp;&amp; l &lt;= lambda[i+<span class="number">1</span>])</div><div class="line">            &#123;</div><div class="line">                <span class="keyword">float</span> t = (l - lambda[i]) / (lambda[i+<span class="number">1</span>] - lambda[i]);</div><div class="line">                <span class="keyword">return</span> Lerp(t, vals[i], vals[i+<span class="number">1</span>]);</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h2 id="5-4-辐射度学基础-P310"><a href="#5-4-辐射度学基础-P310" class="headerlink" title="5.4 辐射度学基础 P310"></a>5.4 辐射度学基础 P310</h2><p>辐射度学为描述光传播和反射提供了数学工具，同样是渲染算法的基础。辐射传输（Radiative Transfer）是对辐射能传输的现象研究，它基于辐射度学中的原理并且应用在几何光学这个层级。现实中常需要涉及到光的波动模型，诸如描述色散和干涉等现象，这些结果需要被表达成辐射传输理论的形式。再接近本质的描述光可能要借助量子力学的相关原理，但目前的渲染问题完全可以避开这个家伙。<br>PBRT中，几何光学模型已经足够，这里对光的行为做出一些基本的假设：</p>
+<ul>
+<li>线性：一个光学系统中，两个输入所产生的联合效果等于两个单独输入的效果之和</li>
+<li>能量守恒：当光从表面或参与介质上产生散射现象时，散射现象不产生更多的能量</li>
+<li>无偏振现象：忽略偏振现象，光的性质只和波长（或频率）有关</li>
+<li>无荧光或磷光现象：光在某一波长上的行为完全独立于另一波长上的行为</li>
+<li>稳定态：假设环境中的光已达平衡状态，辐射分布不随时间变化</li>
+</ul>
+<p>几何光学模型的缺陷是很难模拟光的衍射和干涉现象。如，在出现光的衍射或干涉的情况下，两个面积上的总辐射通量并不一定等于两个单独面积上的辐射通量之和。</p>
+<h3 id="5-2-1-基本量"><a href="#5-2-1-基本量" class="headerlink" title="5.2.1 基本量"></a>5.2.1 基本量</h3><p><strong>辐射通量</strong><br>辐射通量(Flux)，又称功率(Power)，单位时间内穿过一个表面或一个区域的总能量，单位焦耳/秒(J/s)，或瓦特(W)，惯用符号Φ。光源的发射总量通常用辐射通量表示。点光源的辐射通量可以用以此为球心的假象球的球面的总能量表示。注意Φ与假象球半径无关。<br><strong>辐射照度</strong><br>辐射照度(Irradiance)是到达某面的辐射通量的面积密度，单位W/m2，惯用符号E。对于上述点光源，辐照度如下。光源的能量随距离的平方衰减。<br>$$E=\frac{\Phi}{4\pi r^2}$$<br>光源和表面方向不一致时，朗伯（余弦）定律：到达一个表面上的光的能量跟光线方向和表面法向量的夹角余弦成比例。而当辐射通量的分布并非恒定时，使用微分通量和微分面积定义某点处的辐照度。<br><strong>立体角和辐射强度</strong><br>立体角(Solid Angle)是平面角在球面上的拓展。将某个物体投影到单位球面上，总面积s即能涵盖此物体的立体角。立体角的单位是球面度(Steradians)，整个球面的立体角是4π。惯用符号ω表示以球心为原点指向球面上某一点的单位向量。<br>辐射强度(Intensity)，即单位立体角的辐射密度。惯用符号I，它描述了光源的方向性分布，但注意只对点光源有意义。<br>$$I=\frac{d\Phi}{d\omega}$$<br><strong>辐射亮度</strong><br>辐射亮度(Radiance)，单位面积单位立体角的辐射通量密度，惯用符号L。<br>$$L=\frac{d\Phi}{d\omega dA^{\perp}}$$<br>其中$dA^{\perp}$是dA投影在垂直于ω的假想表面上的投影面积。<br>以上辐射量中，辐射亮度最常用。原因在于，其一，它是最基本的辐射量，只要给定辐射亮度，所有其它的量都可以通过面积和方向上的积分得到；其二，在光线通过空的空间区域时，辐射亮度保持不变。</p>
+<h3 id="5-2-2-入出射光的辐射函数"><a href="#5-2-2-入出射光的辐射函数" class="headerlink" title="5.2.2 入出射光的辐射函数"></a>5.2.2 入出射光的辐射函数</h3><p>当讨论环境中某点的辐射亮度和写关于辐射亮度的方程时，注意区分到达某点的辐射亮度和离开那点的辐射亮度（光源和反射）。PBRT使用入射光和出射光的辐射亮度函数来区别二者。<br>设某物体上的一点P，到达该点上的入射光辐射亮度分布可用一个关于位置和方向的函数来描述，即Li(P, ω)；同样出射光的辐射亮度的函数记为Lo(P, ω)。注意，在这两种情况下ω的方向都背离点P（有些写法中Li的ω方向指向P）。<br>通常情况下，Li(P, ω)≠Lo(P, ω)。但在没有表面也没有引起散射的参与介质的空间中Li(P, ω)=Lo(P, ω)。</p>
+<h3 id="5-4-3-亮度和光度测定"><a href="#5-4-3-亮度和光度测定" class="headerlink" title="5.4.3 亮度和光度测定"></a>5.4.3 亮度和光度测定</h3><p>光度测定（Photometry）是针对人可见电磁波的研究。每个光谱辐射测量值都可通过光谱相应曲线V(λ)的积分转换成相应的光度值，其中V(λ)记述了人眼对各种波长的相对敏感度。亮度（Luminance）描述了对于人类观察者来说光谱功率分布的明亮程度，惯用符号Y，它的值依赖于光谱辐射亮度（Radiance）L(λ)。<br>$$Y=\int<em>{\lambda}L(\lambda)V(\lambda)d\lambda$$<br>亮度（Luminance）和光谱相应曲线V(λ)和XYZ的颜色表示法紧密相关。CIE的Y(λ)三色曲线和V(λ)和成比例，因此也可如下表示。<br>$$Y=683\int</em>{\lambda}L(\lambda)Y(\lambda)d\lambda$$<br>亮度的单位是cd/m2（坎德拉每平方），或是nit。</p>
+<h2 id="5-5-使用辐射度积分"><a href="#5-5-使用辐射度积分" class="headerlink" title="5.5 使用辐射度积分"></a>5.5 使用辐射度积分</h2><p>本章阐述如何计算辐射度积分。以计算某点上的辐射照度值为例，设某点P上的法向量n，在方向集合Ω上的辐射亮度所引起的辐射照度是：<br>$$E(p,n)=\int_{\Omega}L_i(p,\omega)|\cos \theta|d\omega$$<br>其中Li(P, ω)是入射光的辐射亮度函数，cosθ来自于辐射亮度中的$dA^{\perp}$，θ是方向ω和法向量n的夹角。通常对法向量n所对应的半球面的方向集合求积分计算出辐射照度。 </p>
+<h3 id="5-5-1-投影立体角的积分"><a href="#5-5-1-投影立体角的积分" class="headerlink" title="5.5.1 投影立体角的积分"></a>5.5.1 投影立体角的积分</h3><p>积分式中的余弦项是可变项，不利于积分的意义的表达。为此引用立体投射角（非立体角）测量积分所对应的面积。同立体角，物体的投影立体角是由物体到单位球面上的投影来决定的，但是还要再把结果投影到同法线同圆心的单位圆盘上。因此，可把对半球上的方向积分等价写成对投影立体角的积分。<br>投影立体角测度和立体角测度的关系如下<br>$$d\omega^{\perp}=|\cos\theta|d\omega$$<br>因此，根据辐射亮度求半球上的辐射照度的积分的公式如下。<br>$$E(p,n)=\int<em>{H^2</em>{(n)}}L_i(p,\omega)d\omega^{\perp}$$<br>现在从辐射亮度积分得到了辐射照度，那么给定物体的表面面积，能积分出半球所发出的的总辐射通量。<br>$$\Phi=\int<em>A\int</em>{H^2_{(n)}}L_o(p,\omega)d\omega^{\perp}dA$$</p>
+<h3 id="5-5-2-球面坐标的积分"><a href="#5-5-2-球面坐标的积分" class="headerlink" title="5.5.2 球面坐标的积分"></a>5.5.2 球面坐标的积分</h3><p>实际中常把立体角上的积分转换为球面坐标(θ,φ)上的积分。dω的微分面积等于它的微分边长sinθdφ和dθ的乘积。<br>$$d\omega=\sin\theta d\theta d\phi$$<br>最后得到半球上的辐射照度的积分公式如下。<br>$$E(p,n)=\int^{2\pi}<em>0\int^{\pi /2}</em>{0}L_i(p,\theta,\phi)\cos\theta\sin\theta d\theta d\phi$$<br>若所有方向上的辐射亮度相同，那么上式简化为E=πLi。<br>为便于计算，定义函数SphericalDirection()完成球坐标到笛卡尔坐标的转换公式。注意参数是sinθ和cosθ值和φ本身。它还有一个重载，可以指定坐标轴。反之同理，函数SphericalTheta()负责计算θ值，函数SphericalPhi()负责计算φ值。</p>
+<h3 id="5-5-3-面积的积分"><a href="#5-5-3-面积的积分" class="headerlink" title="5.5.3 面积的积分"></a>5.5.3 面积的积分</h3><p>另一简化计算的方法是把对方向的积分转换为对面积的积分。假设有一个具有恒定光辐射的四边形，需要计算在点P上的辐射照度，此时不推荐用方向上的积分完成计算：因为给定某方向，难以确定四边形在此方向上是否可见。<br>从点P的方向来看，微分面积跟微分立体角的关系如下。<br>$$d\omega=\frac{dA\cos\theta}{r^2}$$<br>其中，θ是dA的法向量和P到dA的向量的夹角，r是P到dA的距离。<br>因此，变式如下。<br>$$E(p,n)=\int_AL\cos\theta_i\frac{\cos\theta_o dA}{r^2}$$<br>其中，L是四边形的表面所发射出的辐射亮度。设点P的法向量n，光线上一点P’，点P的法向量n’，则θi是n和PP’的夹角，θo是n’和P’P的夹角。</p>
+<h2 id="5-6-表面反射"><a href="#5-6-表面反射" class="headerlink" title="5.6 表面反射"></a>5.6 表面反射</h2><p>当光线入射到表面，表面散射光，把其中一部分光反射回环境中。对这种现象，要模拟两个主要的效果：反射光的光谱分布(Spectral Distrbution)和它的方向分布(Directional Distribution)。例如，柠檬皮吸收了绝大部分的蓝光波段的光，而反射了红光波段和绿光波段的光，因此，当用白光照射它时颜色呈黄色。不管从那个方向观察柠檬皮，它基本上保持同一颜色，虽然有些方向上可以看到高光。相反，一面镜子所反射出的光几乎完全依赖于观察方向。<br>透明材质表面上的反射更为复杂。例如皮肤、蜡叶等展示出了地下光传输过程（Subsurface Light Transport）。为描述光照反射这一机制，有两种抽象概念：BRDF和BSSRDF。BRDF描述了光在表面上某点的反射，但忽略了地下光传输过程，因为对于某些材质这一过程并不明显。而BSSRDF则能更好的处理透明材质。</p>
+<h3 id="5-6-1-BRDF"><a href="#5-6-1-BRDF" class="headerlink" title="5.6.1 BRDF"></a>5.6.1 BRDF</h3><p>BRDF的作用是给定方向ωi上的入射光辐射亮度Li(p, ωi)和观察者方向ωo，可得到此方向上离开表面的出射光辐射亮度Lo(p, ωo)。<br>如果我们把方向ωi看作关于方向的微分圆锥(Differential Cone)，那么在P点的微分辐射照度如下。<br>$$dE(p,\omega_i)=L_i(p,\omega_i)\cos\theta_id\omega_i$$<br>ωo方向上产生的微分辐射亮度dLo(p, ωo)和微分辐射照度dE(p, ωi)成正比例， 这个比例常数就定义了表面关于给定方向(ωi, ωo)的BRDF。<br>$$f_r(p,\omega_o,\omega_i)=\frac{dL_o(p,\omega_o)}{dE(p,\omega_i)}=\frac{dL_o(p,\omega_o)}{L_i(p,\omega_i)\cos\theta_i d\omega_i}$$<br>基于物理的BRDF有两个重要性质，其一，互逆性，fr(p, ωi, ωo) = fr(p, ωo, ωi)；其二，能量守恒，反射光的总能量小于或等于入射光的总能量。<br>表面的双向透射分布函数(BTDF)表述透射光的分布，它的定义和BRDF类似，记为ft(p, ωi, ωo)。BTDF并不遵守互逆原则。BRDF和BTDF统一记为f(p, ωi, ωo)并称为双向散射分布函数(BSDF)。 利用BSDF的定义，有：<br>$$dL_o(p,\omega_o)=f(p,\omega_o,\omega_i)L_i(p,\omega_i)|\cos\theta_i|d\omega_i$$<br>这里的余弦带有绝对值是因为PBRT中不把法向量改为反方向使其跟ωi在表面的同一侧。<br>对上式取围绕点P入射方向球面上的积分，在方向ωo上的散射出的辐射亮度如下。<br>$$L_o(p,\omega<em>o)=\int</em>{S^2}f(p,\omega_o,\omega_i)L_i(p,\omega_i)|\cos\theta_i|d\omega_i$$<br>你面前的是传说中的渲染方程。它基于表面的散射性质，描述了在某一点上的入射光分布转换为散射分布的过程。当对整个球面进行积分时（S^2），称之为散射方程。当对半球面进行积分时（H^2），称之为反射方程。</p>
+<h3 id="5-6-2-BSSRDF"><a href="#5-6-2-BSSRDF" class="headerlink" title="5.6.2 BSSRDF"></a>5.6.2 BSSRDF</h3><p>许多材质都存在地下光线传输过程：光的入点和出点相隔一段距离。总之，这对于模拟蜡、大理石、皮肤和一些生物组织起关键作用。<br>BSSRDF是这种散射过程的抽象描述。它是描述给定出射位置和角度的微分辐射亮度和给定位置和角度的微分入射辐射照度之比的分布函数。<br>$$S(p_o,\omega_o,p_i,\omega_i)=\frac{dL_o(p_o),\omega_o}{dE(p_i,\omega_i)}$$<br>BSSRDF需要表面面积和入射方向的积分，它在渲染算法中的应用较为复杂。<br>$$L_o(p_o,\omega_o)=\int<em>A\int</em>{H^2(n)}S(p_o,\omega_o,p_i,\omega_i)L_i(p_i,\omega_i)|\cos\theta_i|d\omega_idA$$<br>随着pi和po两点间距离的增加，S的值一般会减少，这一现象对实现地下光散射算法有本质上的帮助。<br>光在表面下传输过程的描述原则上和体积光在参与介质中的传输过程大致相似，在章节16会详细说明。</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/CG/" rel="tag">#CG</a>
+          
+            <a href="/tags/PBRT/" rel="tag">#PBRT</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/08/30/pbrt-ch4/" rel="next" title="PBRT 章节4 图元与求交加速">
+                <i class="fa fa-chevron-left"></i> PBRT 章节4 图元与求交加速
+              </a>
+            
+          </div>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel ">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.png"
+               alt="Sulpures" />
+          <p class="site-author-name" itemprop="name">Sulpures</p>
+          <p class="site-description motion-element" itemprop="description">「今せぇいっぱい生きよう」</p>
+        </div>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">6</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">1</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+            
+              
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#5-1-光谱表示-P290"><span class="nav-number">1.</span> <span class="nav-text">5.1 光谱表示 P290</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-1-光谱类型"><span class="nav-number">1.1.</span> <span class="nav-text">5.1.1 光谱类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-2-CoefficientSpectrum的实现"><span class="nav-number">1.2.</span> <span class="nav-text">5.1.2 CoefficientSpectrum的实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-2-SampledSpectrum类-P295"><span class="nav-number">2.</span> <span class="nav-text">5.2 SampledSpectrum类 P295</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-1-XYZ颜色"><span class="nav-number">2.1.</span> <span class="nav-text">5.2.1 XYZ颜色</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-2-RGB颜色"><span class="nav-number">2.2.</span> <span class="nav-text">5.2.2 RGB颜色</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-3-RGBSpectrum的实现-P308"><span class="nav-number">3.</span> <span class="nav-text">5.3 RGBSpectrum的实现 P308</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-4-辐射度学基础-P310"><span class="nav-number">4.</span> <span class="nav-text">5.4 辐射度学基础 P310</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-1-基本量"><span class="nav-number">4.1.</span> <span class="nav-text">5.2.1 基本量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-2-入出射光的辐射函数"><span class="nav-number">4.2.</span> <span class="nav-text">5.2.2 入出射光的辐射函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-4-3-亮度和光度测定"><span class="nav-number">4.3.</span> <span class="nav-text">5.4.3 亮度和光度测定</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-5-使用辐射度积分"><span class="nav-number">5.</span> <span class="nav-text">5.5 使用辐射度积分</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-5-1-投影立体角的积分"><span class="nav-number">5.1.</span> <span class="nav-text">5.5.1 投影立体角的积分</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-5-2-球面坐标的积分"><span class="nav-number">5.2.</span> <span class="nav-text">5.5.2 球面坐标的积分</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-5-3-面积的积分"><span class="nav-number">5.3.</span> <span class="nav-text">5.5.3 面积的积分</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-6-表面反射"><span class="nav-number">6.</span> <span class="nav-text">5.6 表面反射</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-6-1-BRDF"><span class="nav-number">6.1.</span> <span class="nav-text">5.6.1 BRDF</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-6-2-BSSRDF"><span class="nav-number">6.2.</span> <span class="nav-text">5.6.2 BSSRDF</span></a></li></ol></li></ol></div>
+            
+          </div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2016</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Sulpures</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/vendors/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.0.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.0.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.0.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.0.1"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+  
+  
+
+  
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+        processEscapes: true,
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+  </script>
+
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for (i=0; i < all.length; i += 1) {
+        all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+    });
+  </script>
+  <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+  
+
+  
+
+</body>
+</html>
