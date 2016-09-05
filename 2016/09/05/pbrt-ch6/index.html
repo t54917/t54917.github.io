@@ -1,0 +1,655 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/vendors/font-awesome/css/font-awesome.min.css?v=4.4.0" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.0.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="CG,PBRT," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.0.1" />
+
+
+
+
+
+
+<meta name="description" content="章节1中描述了最简单的针孔相机模型。这种模型易于描述和模拟但存在许多缺点。例如，针孔相机渲染出的所有物体都在锐聚焦区(Sharp Focus)，成像结果像是计算机生成的（废话……）。为增强图像真实感，需要更细致的模拟现实世界中的成像系统。本章介绍Camera类及其两个紧密相关的函数：Camera::GenerateRay()和Camera::GenerateRayDifferential()。前者">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PBRT 章节6 相机模型">
+<meta property="og:url" content="http://sulpures.me/2016/09/05/pbrt-ch6/index.html">
+<meta property="og:site_name" content="僕だけ居る">
+<meta property="og:description" content="章节1中描述了最简单的针孔相机模型。这种模型易于描述和模拟但存在许多缺点。例如，针孔相机渲染出的所有物体都在锐聚焦区(Sharp Focus)，成像结果像是计算机生成的（废话……）。为增强图像真实感，需要更细致的模拟现实世界中的成像系统。本章介绍Camera类及其两个紧密相关的函数：Camera::GenerateRay()和Camera::GenerateRayDifferential()。前者">
+<meta property="og:updated_time" content="2016-09-05T14:43:58.600Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="PBRT 章节6 相机模型">
+<meta name="twitter:description" content="章节1中描述了最简单的针孔相机模型。这种模型易于描述和模拟但存在许多缺点。例如，针孔相机渲染出的所有物体都在锐聚焦区(Sharp Focus)，成像结果像是计算机生成的（废话……）。为增强图像真实感，需要更细致的模拟现实世界中的成像系统。本章介绍Camera类及其两个紧密相关的函数：Camera::GenerateRay()和Camera::GenerateRayDifferential()。前者">
+
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: 0,
+      author: '博主'
+    }
+  };
+</script>
+
+
+
+
+  <link rel="canonical" href="http://sulpures.me/2016/09/05/pbrt-ch6/"/>
+
+  <title> PBRT 章节6 相机模型 | 僕だけ居る </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">僕だけ居る</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+  <p class="site-subtitle"></p>
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                PBRT 章节6 相机模型
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            <span class="post-meta-item-icon">
+              <i class="fa fa-calendar-o"></i>
+            </span>
+            <span class="post-meta-item-text">发表于</span>
+            <time itemprop="dateCreated" datetime="2016-09-05T22:25:07+08:00" content="2016-09-05">
+              2016-09-05
+            </time>
+          </span>
+
+          
+            <span class="post-category" >
+              &nbsp; | &nbsp;
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                  <a href="/categories/Graphics/" itemprop="url" rel="index">
+                    <span itemprop="name">Graphics</span>
+                  </a>
+                </span>
+
+                
+                
+
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+
+          
+          
+
+          
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>章节1中描述了最简单的针孔相机模型。这种模型易于描述和模拟但存在许多缺点。例如，针孔相机渲染出的所有物体都在锐聚焦区(Sharp Focus)，成像结果像是计算机生成的（废话……）。为增强图像真实感，需要更细致的模拟现实世界中的成像系统。<br>本章介绍Camera类及其两个紧密相关的函数：Camera::GenerateRay()和Camera::GenerateRayDifferential()。前者计算图像平面上任一点所对应的世界空间中的光线。因为成像模型不同，生成光线的方式也不同，所以PBRT可对同一三维场景生成不同的图像；后者不仅生成图像，而且计算采样光线所在图像区域的相关信息，这些信息在后续中会被用于诸如反锯齿等操作。这里要介绍Camera类的几个接口实现，每个实现的光线生成方法都不同。</p>
+<h2 id="6-1-相机模型-P330"><a href="#6-1-相机模型-P330" class="headerlink" title="6.1 相机模型 P330"></a>6.1 相机模型 P330</h2><p>Camera抽象基类包含相机的通用设置并定义了所有相机的共同的接口，详见core/camera.h和core/camera.cpp。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Camera Declarations&gt; ≡</div><div class="line">    <span class="keyword">class</span> Camera</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;Camera Interface <span class="number">302</span>&gt;</div><div class="line">        &lt;Camera Public Data <span class="number">302</span>&gt;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<p>Camera基类的构造函数中含有所有相机类型都需要的参数，其中最重要的是将相机置入场景的变换矩阵，自然，还有它的逆矩阵。现世中的相机都有快门，当曝光时间非零时就会造成动态模糊，为此所有的Camera类中含有快门开关两个时间值用于在适当时间生成光线。此外，Camera中含有一个Film的引用用于代表最终的成像结果。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;Camera Interface&gt; ≡ <span class="number">302</span></div><div class="line">    Camera(<span class="keyword">const</span> AnimatedTransform &amp;cam2world, <span class="keyword">float</span> sopen, <span class="keyword">float</span> sclose,</div><div class="line">           Film *film);</div><div class="line"></div><div class="line">&lt;Camera Public Data&gt; ≡ <span class="number">302</span></div><div class="line">    AnimatedTransform CameraToWorld;</div><div class="line">    <span class="keyword">const</span> <span class="keyword">float</span> shutterOpen, shutterClose;</div><div class="line">    Film *film;</div></pre></td></tr></table></figure></p>
+<p>Camera的子类首先要实现函数Camera::GenerateRay()，作用是对给定的图像采样点生成光线。CameraSample::imageX和CameraSample::imageY两个成员决定了光线在图像平面上采样点的坐标。此外Camera还需对返回的光线方向向量进行正规化操作。这个函数返回一个浮点权值，这个权值记录了沿着这条光路多少光线抵达了胶片平面并为最终的生成结果做出贡献。大多数情况下可返回1，但模拟真实物理透镜系统的相机需要根据虚拟透镜系统的光学和几何性质来设置该值。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&lt;Camera Interface&gt; +≡ <span class="number">302</span></div><div class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">float</span> <span class="title">GenerateRay</span><span class="params">(<span class="keyword">const</span> CameraSample &amp;sample,</span></span></div><div class="line">                              Ray *ray) <span class="keyword">const</span> = <span class="number">0</span>;</div></pre></td></tr></table></figure></p>
+<p>函数GenerateRayDifferential()在GenerateRay()的基础上，还计算了光线所对应像素在xy方向上位移一个单位后的像素值。这里将偏移采样存于CameraSamples中。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">&lt;Camera Method Definitions&gt; ≡</div><div class="line">    <span class="keyword">float</span> Camera::GenerateRayDifferential(<span class="keyword">const</span> CameraSample &amp;sample,</div><div class="line">                                          RayDifferential *rd) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> wt = GenerateRay(sample, rd);</div><div class="line">        &lt;Find ray after shifting one pixel in the x direction <span class="number">303</span>&gt;</div><div class="line">        &lt;Find ray after shifting one pixel in the y direction&gt;</div><div class="line">        <span class="keyword">if</span> (wtx == <span class="number">0.f</span> || wty == <span class="number">0.f</span>)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> <span class="number">0.f</span>;</div><div class="line">        &#125;</div><div class="line">        rd-&gt;hasDifferentials = <span class="literal">true</span>;</div><div class="line">        <span class="keyword">return</span> wt;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>在x轴找到一个光线的像素，只需初始化一个CameraSample并赋值适当值到RayDifferential结构中，y轴同理。</p>
+<h3 id="6-1-1-相机坐标空间"><a href="#6-1-1-相机坐标空间" class="headerlink" title="6.1.1 相机坐标空间"></a>6.1.1 相机坐标空间</h3><p>首先介绍与相机模型和成像过程相关的四个坐标空间。</p>
+<ul>
+<li>物体空间：定义几何图元所用的坐标系统</li>
+<li>世界空间：每个图元拥有自己的物体空间，所有场景中的物体都要被放置在同一世界空间下，世界空间是标准坐标系，也是定义其它所有空间的依据</li>
+<li>相机空间：虚拟相机放置在世界空间的某个位置，定义了一个原点位于此位置的新坐标系，坐标系z轴为相机观察方向，y轴为上方向，这个空间用于判断物体对相机是否可见——若物体在相机空间中的包围盒全部落在z=0平面后，则物体不可见</li>
+<li>屏幕空间：屏幕空间定义在图像平面，相机将相机空间中的物体投影到图像平面上，在屏幕窗口内的部分在图像中可见。屏幕空间中深度值z的范围是0到1，分别对应近裁剪面和远裁剪面。注意，屏幕空间仍是三维空间，其z值是有意义的</li>
+<li>正规化设备空间(Normalized Device Coordinate， NDC)：这是真实图形被渲染所用的坐标空间，在xy平面上其空间范围是从(0,0)到(1,1)且(0,0)对应于图像的左上角，深度值意义同上。从屏幕空间到NDC空间是一个线性变换</li>
+<li>光栅空间(Raster Space)：除xy的范围从(0, 0)到(xResolution, yResolution)，其余同NDC</li>
+</ul>
+<p>所有相机对象存有世界空间到相机空间的变换，用于把场景中的图元变换到相机空间。上文已述，相机空间的原点即相机位置，相机的方向即相机空间的z轴。下文所述的投影相机用4x4矩阵进行空间变换，但是具有特殊成像效果的相机不一定能用这些变换矩阵来表示。</p>
+<h2 id="6-2-投影相机模型-P334"><a href="#6-2-投影相机模型-P334" class="headerlink" title="6.2 投影相机模型 P334"></a>6.2 投影相机模型 P334</h2><p>三维计算机图形学的基本问题之一就是三维观察问题：如何把三维场景投影到二维图像之中。经典解决方法是4x4投影变换矩阵。因此，先介绍一个投影矩阵相机类，并以此为基础定义两个相机模型：前者实现了正交投影，后者实现了透视投影。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;Camera Declarations&gt; +≡</div><div class="line">    <span class="keyword">class</span> ProjectiveCamera : <span class="keyword">public</span> Camera</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;ProjectiveCamera Public Methods&gt;</div><div class="line">    <span class="keyword">protected</span>:</div><div class="line">        &lt;ProjectiveCamera Protected Data <span class="number">305</span>&gt;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<p>ProjectiveCamera额外需要投影变换矩阵、图像的屏幕空间范围和景深的参数。景深(Depth Of Field)用来模拟真实透镜系统中失焦物体的模糊效果。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;Camera Method Definitions&gt; +≡</div><div class="line">    ProjectiveCamera::ProjectiveCamera(<span class="keyword">const</span> AnimatedTransform &amp;cam2world,</div><div class="line">            <span class="keyword">const</span> Transform &amp;proj, <span class="keyword">const</span> <span class="keyword">float</span> screenWindow[<span class="number">4</span>], <span class="keyword">float</span> sopen,</div><div class="line">            <span class="keyword">float</span> sclose, <span class="keyword">float</span> lensr, <span class="keyword">float</span> focald, Film *f)</div><div class="line">        : Camera(cam2world, sopen, sclose, f)</div><div class="line">    &#123;</div><div class="line">        &lt;Initialize depth of field parameters <span class="number">314</span>&gt;</div><div class="line">        &lt;Compute projective camera transformations <span class="number">305</span>&gt;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>ProjectiveCamera的子类要把投影矩阵传给基类的构造函数（以确定正交投影还是透视投影）。这个变换给出了相机到屏幕的变换，构造器以此为基础计算出其它的变换矩阵。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Compute projective camera transformations&gt; ≡ <span class="number">305</span></div><div class="line">    CameraToScreen = proj;</div><div class="line">    &lt;Compute projective camera screen transformations <span class="number">306</span>&gt;</div><div class="line">    RasterToCamera = Inverse(CameraToScreen) * RasterToScreen;</div><div class="line">    </div><div class="line">&lt;ProjectiveCamera Protected Data&gt; ≡ <span class="number">305</span></div><div class="line">    Transform CameraToScreen, RasterToCamera;</div></pre></td></tr></table></figure></p>
+<p>构造函数需要计算的变换是屏幕到光栅(Screen-to-raster)的投影。首先从屏幕空间中的某点开始，把它平移使得屏幕的左上角位于原点，然后标准化x和y轴的值（NDC），最后把结果按照光栅分辨率进行放大。注意在变换过程中要反转y坐标，因为在屏幕坐标中y是递增，而光栅坐标中y相反。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;Compute projective camera screen transformations&gt; ≡ <span class="number">305</span></div><div class="line">    ScreenToRaster = Scale(<span class="keyword">float</span>(film-&gt;xResolution),</div><div class="line">                           <span class="keyword">float</span>(film-&gt;yResolution), <span class="number">1.f</span>) *</div><div class="line">                     Scale(<span class="number">1.f</span> / (screenWindow[<span class="number">1</span>] - screenWindow[<span class="number">0</span>]),</div><div class="line">                           <span class="number">1.f</span> / (screenWindow[<span class="number">2</span>] - screenWindow[<span class="number">3</span>]), <span class="number">1.f</span>) *</div><div class="line">                     Translate(Vector(-screenWindow[<span class="number">0</span>], -screenWindow[<span class="number">3</span>], <span class="number">0.f</span>));</div><div class="line">    RasterToScreen = Inverse(ScreenToRaster);</div><div class="line"></div><div class="line">&lt;ProjectiveCamera Protected Data&gt; +≡ <span class="number">305</span></div><div class="line">    Transform ScreenToRaster, RasterToScreen;</div></pre></td></tr></table></figure></p>
+<h3 id="6-2-1-正交相机"><a href="#6-2-1-正交相机" class="headerlink" title="6.2.1 正交相机"></a>6.2.1 正交相机</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;OrthographicCamera Declarations&gt; ≡</div><div class="line">    <span class="keyword">class</span> OrthoCamera : <span class="keyword">public</span> ProjectiveCamera</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;OrthoCamera Public Methods&gt;</div><div class="line">    <span class="keyword">private</span>:</div><div class="line">        &lt;OrthoCamera Private Data <span class="number">307</span>&gt;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure>
+<p>正交相机基于正交投影矩阵。正交投影变换用一个长方体来取景，并把场景投影到取经长方体的前面。这个投影过程没有透视收缩效果，因为它要保证平行线经历变换后仍平行，因此物体见相对距离不变。详见cameras/orthographic.h和cameras/orthographic.cpp。<br>正交相机构造函数借助函数Orthographic()生成正交变换矩阵。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;OrthographicCamera Definitions&gt; ≡</div><div class="line">    OrthoCamera::OrthoCamera(<span class="keyword">const</span> AnimatedTransform &amp;cam2world,</div><div class="line">            <span class="keyword">const</span> <span class="keyword">float</span> screenWindow[<span class="number">4</span>], <span class="keyword">float</span> sopen, <span class="keyword">float</span> sclose,</div><div class="line">            <span class="keyword">float</span> lensr, <span class="keyword">float</span> focald, Film *f)</div><div class="line">        : ProjectiveCamera(cam2world, Orthographic(<span class="number">0.</span>, <span class="number">1.</span>), screenWindow,</div><div class="line">                           sopen, sclose, lensr, focald, f)</div><div class="line">    &#123;</div><div class="line">        &lt;Compute differential changes in origin <span class="keyword">for</span> ortho camera rays <span class="number">307</span>&gt;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>正视要求xy坐标不变，但把z值映射到0（近）和1（远）之内。为此，先沿z轴平移场景使得近裁剪面和面z=0重合，然后整个场景在按z方向进行比例变换使远裁剪面映射到面z=1。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Method Definitions&gt; +≡</div><div class="line">    <span class="function">Transform <span class="title">Orthographic</span><span class="params">(<span class="keyword">float</span> znear, <span class="keyword">float</span> zfar)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> Scale(<span class="number">1.f</span>, <span class="number">1.f</span>, <span class="number">1.f</span> / (zfar-znear)) *</div><div class="line">               Translate(Vector(<span class="number">0.f</span>, <span class="number">0.f</span>, -znear));</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>由于正交投影的简便，可以直接在函数GenerateRayDifferential()中计算xy坐标下的微分光线。构造函数在此根据图像平面内xy轴坐标一个像素的偏移量预计算有多少光源移入相机坐标空间。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;Compute differential changes in origin <span class="keyword">for</span> ortho camera rays&gt; ≡ <span class="number">306</span></div><div class="line">    dxCamera = RasterToCamera(Vector(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>));</div><div class="line">    dyCamera = RasterToCamera(Vector(<span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>));</div><div class="line"></div><div class="line">&lt;OrthoCamera Private Data&gt; ≡ <span class="number">306</span></div><div class="line">    Vector dxCamera, dyCamera;</div></pre></td></tr></table></figure></p>
+<p>现在可遍历光栅空间中的采样点，之后转换到相机光线。首先，把光栅空间中的采样点变换到相机空间中，得到在近裁剪面上的一点，即光线的原点。因为相机空间观察方向是z轴，因此光线方向是(0,0,1)。如果场景设置了景深，还要修改光线的原点和方向来模拟景深。光线的时间值由偏移量CameraSample::time对曝光的起止时间线性插值得到。最后，把光线变换到世界空间中。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;OrthographicCamera Definitions&gt; +≡</div><div class="line">    <span class="keyword">float</span> OrthoCamera::GenerateRay(<span class="keyword">const</span> CameraSample &amp;sample, Ray *ray) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        &lt;Generate raster and camera samples <span class="number">309</span>&gt;</div><div class="line">        *ray = Ray(Pcamera, Vector(<span class="number">0</span>,<span class="number">0</span>,<span class="number">1</span>), <span class="number">0.f</span>, INFINITY);</div><div class="line">        &lt;Modify ray <span class="keyword">for</span> depth of field <span class="number">315</span>&gt;</div><div class="line">        ray-&gt;time = Lerp(sample.time, shutterOpen, shutterClose);</div><div class="line">        CameraToWorld(*ray, ray);</div><div class="line">        <span class="keyword">return</span> <span class="number">1.f</span>;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>所有的变换矩阵已被设置完毕，光栅空间采样点变换到相机空间也很容易。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;Generate raster and camera samples&gt; ≡ <span class="number">309</span>, <span class="number">312</span></div><div class="line">    <span class="function">Point <span class="title">Pras</span><span class="params">(sample.imageX, sample.imageY, <span class="number">0</span>)</span></span>;</div><div class="line">    Point Pcamera;</div><div class="line">    RasterToCamera(Pras, &amp;Pcamera);</div></pre></td></tr></table></figure></p>
+<p>GenerateRayDifferential()生成主相机光线的实现方式同上。通过OrthoCamera构造函数中的偏移量的计算得到微分光线的原点，之后所有的微分光线被变换进世界空间下。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">&lt;OrthographicCamera Definitions&gt; +≡</div><div class="line">    <span class="keyword">float</span> OrthoCamera::GenerateRayDifferential(<span class="keyword">const</span> CameraSample &amp;sample,</div><div class="line">                                               RayDifferential *ray) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        &lt;Compute main orthographic viewing ray&gt;</div><div class="line">        ray-&gt;rxOrigin = ray-&gt;o + dxCamera;</div><div class="line">        ray-&gt;ryOrigin = ray-&gt;o + dyCamera;</div><div class="line">        ray-&gt;rxDirection = ray-&gt;ryDirection = ray-&gt;d;</div><div class="line">        ray-&gt;hasDifferentials = <span class="literal">true</span>;</div><div class="line">        CameraToWorld(*ray, ray);</div><div class="line">        <span class="keyword">return</span> <span class="number">1.f</span>;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="6-2-2-透视相机"><a href="#6-2-2-透视相机" class="headerlink" title="6.2.2 透视相机"></a>6.2.2 透视相机</h3><p>透视投影是把一个以投影中心为顶点的透视四棱锥投影到一个二维图像平面上。它具有有透视收缩效果，因此它并不保持投影前后距离和角度的相对大小不变。详见cameras/perspective.h和cameras/perspective.cpp。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">&lt;PerspectiveCamera Declarations&gt; ≡</div><div class="line">    <span class="keyword">class</span> PerspectiveCamera : <span class="keyword">public</span> ProjectiveCamera</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;PerspectiveCamera Public Methods <span class="number">312</span>&gt;</div><div class="line">    <span class="keyword">private</span>:</div><div class="line">        &lt;PerspectiveCamera Private Data <span class="number">312</span>&gt;</div><div class="line">    &#125;;</div><div class="line"></div><div class="line">&lt;PerspectiveCamera Method Definitions&gt; ≡</div><div class="line">    PerspectiveCamera:: PerspectiveCamera(<span class="keyword">const</span> AnimatedTransform &amp;cam2world,</div><div class="line">            <span class="keyword">const</span> <span class="keyword">float</span> screenWindow[<span class="number">4</span>], <span class="keyword">float</span> sopen, <span class="keyword">float</span> sclose,</div><div class="line">            <span class="keyword">float</span> lensr, <span class="keyword">float</span> focald, <span class="keyword">float</span> fov, Film *f)</div><div class="line">        : ProjectiveCamera(cam2world, Perspective(fov, <span class="number">1e-2</span>f, <span class="number">1000.f</span>),</div><div class="line">            screenWindow, sopen, sclose, lensr, focald, f)</div><div class="line">    &#123;</div><div class="line">        &lt;Compute differential changes in origin <span class="keyword">for</span> perspective camera rays <span class="number">312</span>&gt;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>透视投影描述了对场景的透视观察。场景中的点被投影到垂直于z轴的观察平面上。函数Perspective()用于计算透视变换矩阵，它的参数为视野角度(Field-of-view angle)fov和远/近裁剪面的距离。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;Transform Method Definitions&gt; +≡</div><div class="line">    <span class="function">Transform <span class="title">Perspective</span><span class="params">(<span class="keyword">float</span> fov, <span class="keyword">float</span> n, <span class="keyword">float</span> f)</span></span></div><div class="line">    &#123;</div><div class="line">        &lt;Perform projective divide <span class="number">311</span>&gt;</div><div class="line">        &lt;Scale to canonical viewing volume <span class="number">312</span>&gt;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>该变换可分成两步进行。第一步，将相机空间上的点p投影到观察平面。在观察平面上的投影坐标x’和y’分别是x和y除以z值。投影坐标z值被映射到0到1之间，即z’=f(z-n)/z(f-n)。把这步计算归纳成4x4的齐次坐标矩阵。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;Perform projective divide&gt; ≡ <span class="number">311</span></div><div class="line">    Matrix4x4 persp = Matrix4x4(<span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>,</div><div class="line">                                <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>,</div><div class="line">         <span class="number">0</span>, <span class="number">0</span>, f / (f - n), -f*n / (f - n),</div><div class="line">                                <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>);</div></pre></td></tr></table></figure></p>
+<p>第二步，参数中的视野角度被用来处理投影平面上(x,y)点的比例变换，使视野中的点被投影到观察平面[-1,1]的坐标值范围中。对于正方形图像，x和y在屏幕空间的取值范围都是[-1,1]。对于非正方形图像，图像较窄的那一方向的范围是[-1,1]，而另一方向上的范围要相对大一些。正切值是直角三角形对边和邻边之比而邻边长为1，所以对边长为tan(fov/2)。采用这个值的倒数进行比例变换把视野取值范围映射到[-1,1]。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&lt;Scale to canonical viewing volume&gt; ≡ <span class="number">311</span></div><div class="line">    <span class="keyword">float</span> invTanAng = <span class="number">1.f</span> / tanf(Radians(fov) / <span class="number">2.f</span>);</div><div class="line">    <span class="keyword">return</span> Scale(invTanAng, invTanAng, <span class="number">1</span>) * Transform(persp);</div></pre></td></tr></table></figure></p>
+<p>同OrthoCamera，PerspectiveCamera也预计算出图像平面中单位偏移量的像素点所生成的光线信息。这里计算相机空间下近透射平面关于偏移像素的位置变化。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;Compute differential changes in origin <span class="keyword">for</span> perspective camera rays&gt; ≡ <span class="number">310</span></div><div class="line">    dxCamera = RasterToCamera(Point(<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>)) - RasterToCamera(Point(<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>));</div><div class="line">    dyCamera = RasterToCamera(Point(<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>)) - RasterToCamera(Point(<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>));</div><div class="line"></div><div class="line">&lt;PerspectiveCamera Private Data&gt; ≡ <span class="number">310</span></div><div class="line">    Vector dxCamera, dyCamera;</div></pre></td></tr></table></figure></p>
+<p>透视投影中，所有光线起源于相机空间的原点。光线的方向由从原点到近平面Pcamera的向量决定。换句话说，光线的方向向量的各个分量就等于采样点的位置的各个分量，因此直接从点Pcamera处初始化方向，而不是通过减法得到方向。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&lt;PerspectiveCamera Method Definitions&gt; +≡</div><div class="line">    <span class="keyword">float</span> PerspectiveCamera::GenerateRay(<span class="keyword">const</span> CameraSample &amp;sample,</div><div class="line">                                         Ray *ray) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        &lt;Generate raster and camera samples <span class="number">309</span>&gt;</div><div class="line">        *ray = Ray(Point(<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>), Vector(Pcamera), <span class="number">0.f</span>, INFINITY);</div><div class="line">        &lt;Modify ray <span class="keyword">for</span> depth of field <span class="number">315</span>&gt;</div><div class="line">        ray-&gt;time = Lerp(sample.time, shutterOpen, shutterClose);</div><div class="line">        CameraToWorld(*ray, ray);</div><div class="line">    <span class="keyword">return</span> <span class="number">1.f</span>;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>GenerateRayDifferential()的实现同GenerateRay()，除此之外还要额外计算微分光线。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;PerspectiveCamera Public Methods&gt; ≡ <span class="number">310</span></div><div class="line">    <span class="function"><span class="keyword">float</span> <span class="title">GenerateRayDifferential</span><span class="params">(<span class="keyword">const</span> CameraSample &amp;sample,</span></span></div><div class="line">                                  RayDifferential *ray) <span class="keyword">const</span>;</div><div class="line"></div><div class="line">&lt;Compute offset rays <span class="keyword">for</span> PerspectiveCamera ray differentials&gt; ≡</div><div class="line">    ray-&gt;rxOrigin = ray-&gt;ryOrigin = ray-&gt;o;</div><div class="line">    ray-&gt;rxDirection = Normalize(Vector(Pcamera) + dxCamera);</div><div class="line">    ray-&gt;ryDirection = Normalize(Vector(Pcamera) + dyCamera);</div></pre></td></tr></table></figure></p>
+<h3 id="6-2-3-景深"><a href="#6-2-3-景深" class="headerlink" title="6.2.3 景深"></a>6.2.3 景深</h3><p>现世的相机具有透镜系统，用于聚焦光线使其穿过光圈并最终落在胶片平面上。因为光圈面积有限，场景中一个点投影到胶片平面上有可能变成一个区域，即模糊圈(Circle Of Confusion)；相应地，场景中一个区域可能在胶片平面上变成一个点，这样就形成了模糊的图像。<br>模糊圈的大小受光圈半径和镜头与物体的距离的影响。焦距(Focal Distance)是镜头到可产生零半径模糊圈的物体平面的距离。这些点在完美聚焦下非常清晰，而在实际应用中物体并不一定要完美的处于聚焦平面——只要模糊圈大概小于一像素，那么物体就会表现为被聚焦。使物体看上去能被聚焦的位置到镜头的距离范围被称为镜头的景深。投影相机提供了两个关于景深的参数：光圈和焦距。</p>
+<p><projectivecamera protected="" data=""> +=<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;ProjectiveCamera Protected Data&gt; +≡ <span class="number">305</span></div><div class="line">    <span class="keyword">float</span> lensRadius, focalDistance;</div><div class="line"></div><div class="line">&lt;Initialize depth of field parameters&gt; ≡ <span class="number">305</span></div><div class="line">    lensRadius = lensr;</div><div class="line">    focalDistance = focald;</div></pre></td></tr></table></figure></projectivecamera></p>
+<p>采用相似三角形和对镜头轮廓形状的近似来计算模糊圈。选择镜头上的一个点，选择始于镜头上此点的光线，并保证聚焦平面上的物体被聚焦。为了充分的对镜头采样而得到平滑的景深效果，需要为每个图像像素追踪多条光线。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Modify ray <span class="keyword">for</span> depth of field&gt; ≡ <span class="number">309</span>, <span class="number">312</span></div><div class="line">    <span class="keyword">if</span> (lensRadius &gt; <span class="number">0.</span>)</div><div class="line">    &#123;</div><div class="line">        &lt;Sample point on lens <span class="number">317</span>&gt;</div><div class="line">        &lt;Compute point on plane of focus <span class="number">318</span>&gt;</div><div class="line">        &lt;Update ray <span class="keyword">for</span> effect of lens <span class="number">318</span>&gt;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>在章节13中定义的函数ConcentricSampleDisk()在区域[0,1]x[0,1]上取采样位置(u,v)，并把它映射到二维单位圆盘上。为把它转换成镜头上的一点，需要把坐标乘上镜头半径。CameraSample类提供了lensU和lensV存放(u,v)的采样参数。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;Sample point on lens&gt; ≡ <span class="number">315</span></div><div class="line">    <span class="keyword">float</span> lensU, lensV;</div><div class="line">    ConcentricSampleDisk(sample.lensU, sample.lensV, &amp;lensU, &amp;lensV);</div><div class="line">    lensU *= lensRadius;</div><div class="line">    lensV *= lensRadius;</div></pre></td></tr></table></figure></p>
+<p>光线的起点即为镜头上的这个点，而方向用Snell定律确定，该定律描述了光线从一种介质到另一介质发生折射的性质，但是存在一个细节简化计算：所有始于某图像采样点的光线穿过镜头后会聚焦在平面的同一点上，以及穿过镜头中心的光线不会折射。所以，聚焦点即为这条穿过镜头中心的光线和聚焦平面的交点，然后把光线方向设置为从镜头上的点到该交点的向量。<br>对于这个简单的模型而言，聚焦平面和z轴垂直且光线始于原点，因此通过镜头重心的光线和聚焦平面的交点简单易得，t = focalDistance / dz。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&lt;Compute point on plane of focus&gt; ≡ <span class="number">315</span></div><div class="line">    <span class="keyword">float</span> ft = focalDistance / ray-&gt;d.z;</div><div class="line">    Point Pfocus = (*ray)(ft);</div></pre></td></tr></table></figure></p>
+<p>现在可初始化光线。镜头上的采用点为原点，方向为从原点指向Pfocus的向量。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&lt;Update ray <span class="keyword">for</span> effect of lens&gt; ≡ <span class="number">315</span></div><div class="line">    ray-&gt;o = Point(lensU, lensV, <span class="number">0.f</span>);</div><div class="line">    ray-&gt;d = Normalize(Pfocus - ray-&gt;o);</div></pre></td></tr></table></figure></p>
+<h2 id="6-3-环境相机-P347"><a href="#6-3-环境相机-P347" class="headerlink" title="6.3 环境相机 P347"></a>6.3 环境相机 P347</h2><p>和扫描线算法以及其它的光栅化渲染算法比较，光线追踪的一个优点在于可以容易的使用非常规的图像投影方法。对于如何把图像采样位置映射到光线方向这一问题，光追有很大的自由度，因为渲染过程不依赖于诸如“场景中的直线总是映射成图像中的直线”这样的性质。<br>本节描述环境相机模型，该模型追踪场景中某点发出所有方向上的光线，得到从一个点看到的所有可见物体的二维图像。考虑场景中一个包围相机位置的球面，在球面上选择任意一点就得到所要追踪的光线的一个方向。如果用球坐标将球面参数化，球面上的每个点都可用(θ,φ)表示，其中θ∈[0,π]，φ∈[0,2π]。这种图像类型表示了场景中一个点的所有的入射光，它在处理环境光照（一种使用基于图像的场景中光源渲染技术）时很有用处。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;EnvironmentCamera Declarations&gt; ≡</div><div class="line">    <span class="keyword">class</span> EnvironmentCamera : <span class="keyword">public</span> Camera</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;EnvironmentCamera Public Methods <span class="number">319</span>&gt;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<p>注意EnvironmentCamera直接继承自Camera类，而不是ProjectiveCamera类。这是因为环境投射是非线性的，不能由单一的4x4矩阵表示。详细实现见cameras/environment.h和cameras/environment.cpp。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">&lt;EnvironmentCamera Public Methods&gt; ≡ <span class="number">318</span></div><div class="line">    EnvironmentCamera(<span class="keyword">const</span> AnimatedTransform &amp;cam2world, <span class="keyword">float</span> sopen,</div><div class="line">                      <span class="keyword">float</span> sclose, Film *film)</div><div class="line">        : Camera(cam2world, sopen, sclose, film) &#123; &#125;</div><div class="line">        </div><div class="line">&lt;EnvironmentCamera Method Definitions&gt; ≡</div><div class="line">    <span class="keyword">float</span> EnvironmentCamera::GenerateRay(<span class="keyword">const</span> CameraSample &amp;sample,</div><div class="line">                                         Ray *ray) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> time = Lerp(sample.time, shutterOpen, shutterClose);</div><div class="line">        &lt;Compute environment camera ray direction <span class="number">319</span>&gt;</div><div class="line">        *ray = Ray(Point(<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>), dir, <span class="number">0.f</span>, INFINITY, time);</div><div class="line">        CameraToWorld(*ray, ray);</div><div class="line">        <span class="keyword">return</span> <span class="number">1.f</span>;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>为了计算光线的(θ,φ)坐标，先计算光栅图像采样位置的NDC坐标，并对之做比例变换，把它映射到(θ,φ)的取值范围中。下一步是利用球面坐标公式计算出光线方向，最后把这个方向转换到世界空间中。<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;Compute environment camera ray direction&gt; ≡ 319</div><div class="line">    float theta = M_PI * sample.imageY / film-&gt;yResolution;</div><div class="line">    float phi = 2 * M_PI * sample.imageX / film-&gt;xResolution;</div><div class="line">    Vector dir(sinf(theta) * cosf(phi), cosf(theta),</div><div class="line">               sinf(theta) * sinf(phi));</div></pre></td></tr></table></figure></p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/CG/" rel="tag">#CG</a>
+          
+            <a href="/tags/PBRT/" rel="tag">#PBRT</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/09/04/pbrt-ch5/" rel="next" title="PBRT 章节5 颜色与辐射度学">
+                <i class="fa fa-chevron-left"></i> PBRT 章节5 颜色与辐射度学
+              </a>
+            
+          </div>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel ">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.png"
+               alt="Sulpures" />
+          <p class="site-author-name" itemprop="name">Sulpures</p>
+          <p class="site-description motion-element" itemprop="description">「今せぇいっぱい生きよう」</p>
+        </div>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">7</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">1</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+            
+              
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#6-1-相机模型-P330"><span class="nav-number">1.</span> <span class="nav-text">6.1 相机模型 P330</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#6-1-1-相机坐标空间"><span class="nav-number">1.1.</span> <span class="nav-text">6.1.1 相机坐标空间</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-2-投影相机模型-P334"><span class="nav-number">2.</span> <span class="nav-text">6.2 投影相机模型 P334</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#6-2-1-正交相机"><span class="nav-number">2.1.</span> <span class="nav-text">6.2.1 正交相机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-2-2-透视相机"><span class="nav-number">2.2.</span> <span class="nav-text">6.2.2 透视相机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-2-3-景深"><span class="nav-number">2.3.</span> <span class="nav-text">6.2.3 景深</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-3-环境相机-P347"><span class="nav-number">3.</span> <span class="nav-text">6.3 环境相机 P347</span></a></li></ol></div>
+            
+          </div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2016</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Sulpures</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/vendors/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.0.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.0.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.0.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.0.1"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+  
+  
+
+  
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+        processEscapes: true,
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+  </script>
+
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for (i=0; i < all.length; i += 1) {
+        all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+    });
+  </script>
+  <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+  
+
+  
+
+</body>
+</html>
