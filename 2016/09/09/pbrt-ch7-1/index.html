@@ -1,0 +1,644 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/vendors/font-awesome/css/font-awesome.min.css?v=4.4.0" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.0.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="CG,PBRT," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.0.1" />
+
+
+
+
+
+
+<meta name="description" content="PBRT最后输出是二维网格上的彩色像素，但入射的辐射亮度是定义在胶片平面上的连续函数。这个连续函数上计算出离散的像素值，最终直接影响到生成图像的质量。如果这个计算过程出现错误，图像上就会出现伪影(Artifacts)。本章介绍采样理论：对于在连续域上定义的函数，获取函数上离散的采样值，并用这些采样值重构出和原函数接近的新函数。以采样理论为基础，采样器(Samplers)在胶片平面上的入射辐射亮度函">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PBRT 章节7 采样与重构 1/3">
+<meta property="og:url" content="http://sulpures.me/2016/09/09/pbrt-ch7-1/index.html">
+<meta property="og:site_name" content="僕だけ居る">
+<meta property="og:description" content="PBRT最后输出是二维网格上的彩色像素，但入射的辐射亮度是定义在胶片平面上的连续函数。这个连续函数上计算出离散的像素值，最终直接影响到生成图像的质量。如果这个计算过程出现错误，图像上就会出现伪影(Artifacts)。本章介绍采样理论：对于在连续域上定义的函数，获取函数上离散的采样值，并用这些采样值重构出和原函数接近的新函数。以采样理论为基础，采样器(Samplers)在胶片平面上的入射辐射亮度函">
+<meta property="og:image" content="http://i4.buimg.com/4851/f27afeafc57eb2fd.png">
+<meta property="og:image" content="http://i1.piimg.com/4851/2c193796f4f5fa31.png">
+<meta property="og:image" content="http://i2.buimg.com/4851/f98560258f7c95e5.png">
+<meta property="og:image" content="http://i2.buimg.com/4851/ea82147e38a358c6.png">
+<meta property="og:updated_time" content="2016-09-09T08:31:41.331Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="PBRT 章节7 采样与重构 1/3">
+<meta name="twitter:description" content="PBRT最后输出是二维网格上的彩色像素，但入射的辐射亮度是定义在胶片平面上的连续函数。这个连续函数上计算出离散的像素值，最终直接影响到生成图像的质量。如果这个计算过程出现错误，图像上就会出现伪影(Artifacts)。本章介绍采样理论：对于在连续域上定义的函数，获取函数上离散的采样值，并用这些采样值重构出和原函数接近的新函数。以采样理论为基础，采样器(Samplers)在胶片平面上的入射辐射亮度函">
+<meta name="twitter:image" content="http://i4.buimg.com/4851/f27afeafc57eb2fd.png">
+
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: 0,
+      author: '博主'
+    }
+  };
+</script>
+
+
+
+
+  <link rel="canonical" href="http://sulpures.me/2016/09/09/pbrt-ch7-1/"/>
+
+  <title> PBRT 章节7 采样与重构 1/3 | 僕だけ居る </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">僕だけ居る</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+  <p class="site-subtitle"></p>
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                PBRT 章节7 采样与重构 1/3
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            <span class="post-meta-item-icon">
+              <i class="fa fa-calendar-o"></i>
+            </span>
+            <span class="post-meta-item-text">发表于</span>
+            <time itemprop="dateCreated" datetime="2016-09-09T16:31:33+08:00" content="2016-09-09">
+              2016-09-09
+            </time>
+          </span>
+
+          
+            <span class="post-category" >
+              &nbsp; | &nbsp;
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                  <a href="/categories/Graphics/" itemprop="url" rel="index">
+                    <span itemprop="name">Graphics</span>
+                  </a>
+                </span>
+
+                
+                
+
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+
+          
+          
+
+          
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>PBRT最后输出是二维网格上的彩色像素，但入射的辐射亮度是定义在胶片平面上的连续函数。这个连续函数上计算出离散的像素值，最终直接影响到生成图像的质量。如果这个计算过程出现错误，图像上就会出现伪影(Artifacts)。<br>本章介绍采样理论：对于在连续域上定义的函数，获取函数上离散的采样值，并用这些采样值重构出和原函数接近的新函数。以采样理论为基础，采样器(Samplers)在胶片平面上的入射辐射亮度函数上选取采样点。本章介绍五个Sampler类的实现，它们覆盖了许多关于采样问题的解决方法。之后会介绍滤波器的Filter类，用于确定如何混合每个像素相邻的采样点从而得到最终的像素值。最后以胶片类Film结尾，完图像采集的滤波并存入图片众。本章节内容众多，所以分段上传（才不是为了刷Gayhub上的小绿点呢）。</p>
+<h2 id="7-1-采样理论-P352"><a href="#7-1-采样理论-P352" class="headerlink" title="7.1 采样理论 P352"></a>7.1 采样理论 P352</h2><p>数字图像通常是由一个矩形像素值阵列表示。当一个物理设备显示数字图像时，这些值用来设置显示器上像素的强度和颜色。当研究数字图像时，要区分图像像素和显示像素。图像像素代表一个特定采样位置上的函数值，而显示像素是可以按某种分布放射光的物理实体。例如，在CRT（阴极射线管）显示器上，每个萤光体发出的光具有沿其中心向外衰减的区域分布，像素强度也有一个角向分布(angular distribution)，对于CRT显示器而言它是均匀分布的，然而对LCD显示器而言它却是完全定向的。显示器用图像像素值来构造一个在显示器表面上的新图像函数，这个函数对显示器上所有的点都有定义而并非局限于像素上的点。这个获得一组采样值并把它们转换成一个连续函数的过程即为重构(reconstruction)。<br>为计算数字图像上的离散像素值，需要对连续的图像函数进行采样。光线追踪渲染器获取图像函数信息的唯一方式就是通过追踪光线进行采样。例如，没有通用方法来计算胶片平面上两个点间函数值差异的界限。虽然可以只通过在像素位置上精确采样来生成图像，但在不同的位置上采集更多的采样值，然后再合成为最终的像素值会得到更好的结果。实际上，为了得到最佳的成像结果，像素值的计算要做到使在显示器上重构出的图像和虚拟相机胶片上的原场景图像尽可能相同。注意，这个目标并不等同于令显示器上的像素取图像函数在像素位置上的实际值。下述算法的主要目标就是为了处理这个不同。<br>因为采样和重构过程是近似完成的，因此会出现走样(aliasing)的失真现象，包括但不限于锯齿边、动画的闪烁现象等。走样的出现是因为采样过程没能获取连续图像函数的全部信息。<br>举个例子。某一维函数f(x)，现要在函数的定义域中求位置x’的函数值f(x’)，那么x’被称为采样位置，f(x’)被称为采样值。如下图，左侧的f为一个平滑的一维函数，而右侧的f~是一个通过对相邻的采样值进行线性插值而得到的拟合函数。因为对f的信息只局限于这几个采样点，因此f~和f有很大出入。<br><img src="http://i4.buimg.com/4851/f27afeafc57eb2fd.png" alt="图7-1 一维函数的采样和重构"></p>
+<h3 id="7-1-1-频域和傅立叶变换"><a href="#7-1-1-频域和傅立叶变换" class="headerlink" title="7.1.1 频域和傅立叶变换"></a>7.1.1 频域和傅立叶变换</h3><p>傅立叶分析用于评断原函数和重构函数的匹配程度。而傅立叶分析的基础之一是傅立叶变换，它表示一个定义在频域(frequency domain)上的函数。绝大多数函数可以被分解为具有偏移的正弦函数的加权和，傅立叶变换就是把一个函数转换为这种表示方式。一个函数在频域中的表示可以显现出一些特征——重构后正弦函数的频率分布对应于原函数的频率分布。利用这种变换可以深入了解采样和重构过程所产生的失真现象，并研究如何减少这种视觉错误的发生。<br>一维函数f(x)的傅立叶变换如下。<br>$$F(\omega)=\int<em>{-\infty}^{\infty}f(x)e^{-i2\pi \omega x}dx$$<br>其中$e^{ix}=\cos x+i\sin x$，i为虚数单位。为了简单起见，这里只考虑偶函数，此时f的傅立叶变换没有虚数项。得到的函数F是关于频率ω的函数。傅立叶变换运算符用$\mathcal{F}$表示，$\mathcal{F}$是线性的。<br>$$\mathcal{F}[f(x)]=F(\omega)$$<br>上述积分式即傅立叶分析式，或称傅立叶变换。傅里叶变换是可逆的，通过傅立叶合成式，或称傅里叶逆变换，使函数从频域返回空间域。<br>$$f(x)=\int</em>{-\infty}^{\infty}F(\omega)e^{i2\pi \omega x}d\omega$$<br>在频率空间下，一些函数基于迪拉克δ分布，它是满足$\int\delta(x)=1$且x=0，δ(x)=0的特殊函数。δ分布无法用标准数学函数表示，但它通常被想象成一个中心在原点的单位方盒函数在宽度趋向于零时的极限。它具有如下性质。<br>$$\int f(x)\delta (x)dx=f(0)$$</p>
+<h3 id="7-1-2-理想的采样和重构"><a href="#7-1-2-理想的采样和重构" class="headerlink" title="7.1.2 理想的采样和重构"></a>7.1.2 理想的采样和重构</h3><p>使用频率空间分析，可以正式的探讨采样的性能。采样过程需要选择一组等间距的采样位置并计算出这些位置上的函数值。正式的说法是用一个Shah或脉冲序列函数（即一个等距δ函数的无限项求和）来乘这个函数。Shah函数IIIT(x)定义如下。<br>$$III<em>T(x)=T\sum^{\infty}</em>{i=-\infty}\delta (x-iT)$$<br>其中T为周期，或称采样速率。相乘之后会得到等距采样点上函数值所构成的无穷序列。<br>$$III<em>T(x)f(x)=T\sum</em>{i}\delta (x-iT)f(iT)$$<br>这些样本值通过借助选择的重构滤波函数r(x)和卷积计算定义出重构函数f~。<br>$$(III<em>T(x)f(x))\otimes r(x)$$<br>其中卷积运算⊗的定义如下。<br>$$f(x)\otimes g(x)=\int</em>{-\infty}^{\infty}f(x’)g(x-x’)dx’$$<br>对于重构而言，卷积的作用是给出以采样点为中心的重构滤波器经比例变换后的实例的加权和。<br>$$f^{\sim}=T\sum_{i=-\infty}^{\infty}f(iT)r(x-iT)$$<br>例如，对于图7-1，使用三角重构滤波器f(x)=max(0,1-|x|)后的结果如下图所示。其中，三角重建滤波器的实例的总和用虚线表示，原函数重构后的近似值用实线表示。<br><img src="http://i1.piimg.com/4851/2c193796f4f5fa31.png" alt="图7-2 三角滤波器重构"><br>经历了莫名其妙的复杂过程后，最后却得到一个很直观的结果：重构函数f~也可以由某种插值方法得到。然而在建立背景知识后，傅里叶分析可以被更简易的使用。<br>通过在频域中分析被采样函数，很重要的一点是可以根据采样值精确复原原函数。在这里，假定f(x)存在带宽局限(band-limited)——存在某个频率ω0，使得f(x)中不存在超过ω0的频率。根据定义，有局限带宽的函数在频率空间中有紧支撑(compact support)的表示，对于所有的|ω| &gt; ω0，有F(ω) = 0。<br>在傅立叶分析中，一个重要公式是两个函数乘积的傅立叶变换等于两个函数的各自傅立叶变换的卷积。<br>$$\mathcal{F}[f(x)g(x)]=F(\omega)\otimes G(\omega)$$<br>类似地，在空间域中两个函数卷积的傅立叶变换等于两个函数的各自傅立叶变换的乘积。<br>$$\mathcal{F}[f(x)\otimes g(x)]=F(\omega)G(\omega)$$<br>由此可知，在空间域中采样这一步（shah函数和原函数相乘）等价为在频域中的F(ω)和另一个shah函数的卷积。周期为T的shah函数的傅立叶变换是另一个以1/T为周期的shah函数。这倒数关系意味着如果在空间域中采样点相距很远，那么它们在频域中就相距很近。<br>所以，采样信号在频域中的表示即为F(ω)和这个新shah函数的卷积。求一个函数和一个δ函数的卷积会得到这个函数本身，所以，和一个shah函数求卷积就得到原函数拷贝的无限序列，其间距是shah的周期。<br>得到原函数拷贝的无限序列的频谱后，只需保留中心拷贝舍弃其他拷贝就能得到原函数本身。为此要乘上一个具有适当宽度的方盒函数，宽度为T的方盒函数ΠT(x)定义如下。<br>$$\Pi<em>T(x)=\begin{cases}<br>1/(2T) &amp; |x|&lt;T\<br>0 &amp; otherwise<br>\end{cases}$$<br>这个乘法相当于在在空间域中和重构滤波器卷积。这是理想化采样和重构过程。总结如下。<br>$$F^{\sim}=(F(\omega)\otimes III</em>{1/T}(\omega))\Pi_T(x)$$<br>这个公式的意义在于仅靠一组等距采样值，就可以确定f(x)在频率空间中的精确表达。当然，隐藏条件是有限带宽。<br>同样地，在空间域中使用相同的过程可以精确恢复f(x)。方盒函数的傅立叶逆变换是sinc函数，因此在空间域中的理想重构函数如下：<br>$$f^{\sim}=(f(x)III<em>T(x))\otimes sinc(x)$$<br>或是：<br>$$f^{\sim}=\sum^{\infty}</em>{i=-\infty}sinc(x-i)f(i)$$<br>但sinc函数的取值范围是无限的，为了计算f~(x)在空间域中的某个值必须用到所有的采样值f(i)。为此在实际中要使用有限空间范围的滤波器，这样做的代价是无法将原函数完美还原。<br>图形学的常用方法是利用方盒函数进行重构，在x附近的某个区域取其中所有采样值的平均值。这是一个很糟的选择：这个方法试图利用乘以一个sinc函数来孤立函数频谱的中心拷贝，但这样做不仅没有很好地选择出中心拷贝，而且还把其它无穷多个拷贝的高频贡献也涵盖在内。</p>
+<h3 id="7-1-3-走样"><a href="#7-1-3-走样" class="headerlink" title="7.1.3 走样"></a>7.1.3 走样</h3><p>除了sinc函数的无限域，另一个实际问题是理想的采样和重构过程是以信号有带宽局限这一前提展开的。对于那些没有带宽局限的信号、或者使用了采样速率不够高的那些信号，上述过程所重构的函数就和原信号不同。<br>重构的成功关键在于，能够对被采样的频谱乘上适当宽度的方盒函数，进而得到精确的原频谱F(ω)。注意图7-3，信号频谱拷贝被空的间隔分离开来，这样使得完美重构成为可能。<br><img src="http://i2.buimg.com/4851/f98560258f7c95e5.png" alt="图7-3 完美重构"><br>当用较低的采样速率对原函数进行采样时，回忆周期为T的shah函数的傅立叶变换是一个周期为1/T的新的shah函数，因此空间域中的采样间隔增大时，频域中的采样间隔减小，使得F(ω)的拷贝之间彼此靠近。当它们靠得太近时，拷贝之间开始重叠。这时这个新频谱乘上一个方盒函数，结果是一个跟原F(ω)相似但不相等的频谱：在原信号中的高频率的细节被泄漏到重构信号中的低频区域中，这个新的低频误差即为走样（高频信息被视为低频信息）。<br><img src="http://i2.buimg.com/4851/ea82147e38a358c6.png" alt="图7-4 采样率低造成走样"><br>对此，解决方法是增加采样速率，直到频谱拷贝之间相距足够远不再重叠。由采样定理，只要均匀采样点ωs的频率大于信号中最高频率ω0的两倍，那么就可利用采样值完美重构还原信号。这个最小采样频率被称为奈奎斯特(Nyquist)频率。<br>对于没有带宽局限（即ω0为无穷大）的信号，拷贝之间永远存在重叠，无法通过高速率采样的方式避免走样。不幸的是图形学中只有很少的函数是有限带宽的。此外，不连续的函数不算做有限带宽，因为采样时不连续的点总是介于两个采样点之间，采样不能提供不连续点的位置信息。为此，除了增加采样速率外，还须使用其它的方法减少因走样带来的渲染结果失真。</p>
+<h3 id="7-1-4-反走样技术"><a href="#7-1-4-反走样技术" class="headerlink" title="7.1.4 反走样技术"></a>7.1.4 反走样技术</h3><p>根据误差产生的阶段可进行分类。因采样产生的误差称为前走样(prealiasing)，因重构产生的误差称为后走样(postaliasing)。本节将介绍若干反走样技术。<br><strong>非均匀采样</strong><br>虽然对于有无限大频率分量的图像函数不能从采样点得到完美的重构，但是可能通过非均匀采样(Nonuniform Sampling)减少走样产生的视觉影响。令ξ为在0到1之间的随机数，一组基于脉冲序列的非均匀采样为如下。<br>$$\sum_{i=-\infty}^{\infty}\delta (x-(iT+\frac{1}{2}-\xi))$$<br>对于固定的采样速率，均匀采样和非均匀采样都会产生不正确的重构信号，但是非均匀采样可以把产生的走样转换成噪声，这样做减少了对人视觉的影响。在频率空间中，被采样信号的拷贝随机的移位，所以重构后的结果是随机的失真。<br><strong>自适应的采样</strong><br>另一种反走样技术是自适应超采样(Adaptive Sampling)。如果能够识别出高于Nyquist频率的信号区域，就可以只对这些区域增加采样，而不是对所有区域增加采样速率。然而，在实际引用中找到需要超采样的区域相当困难，大多数的实现方式是检查相邻采样值，找到采样值显著变换的地方，然后假设这个区域有高频的信号。<br>一般的，相邻采样值的比对无法准确辩认出高频区域：举个反例，可能这些值是相同的，但函数在它们中的变化很大；或是是相邻采样值本来就相差巨大但是一切正常。<br>自适应方法总会错过一些需要超采样的区域，它很擅长把走样非常严重的图像转换成走样不太严重的图像，但是对于复杂的场景而言，和全局增加采样率相比，自适应方法并不是高效产生无视觉瑕疵图像的合适方式。<br><strong>前置滤波</strong><br>采样理论提供的另一方法是对原函数滤波，使对于原采样速率来说不再存在高频信号。这种方法将在章节10的纹理函数中被使用。这种方法移除了被采样函数中的某些信息从而改变了函数的特性，但总好过走样。<br>用一个方盒滤波器乘以原函数的频谱，选择方盒的宽度使高于Nyquist极限的频率刚好被移除。而在空间域中等价于用sinc滤波器和原函数做卷积。<br>$$f(x)\otimes sinc(2\omega_sx)$$<br>在实际应用中，可以使用一个效果良好具有有限域的滤波器。这个滤波器在频率空间的表示有助于理解它如何模拟理想的sinc滤波器。</p>
+<h3 id="7-1-5-应用于图像合成"><a href="#7-1-5-应用于图像合成" class="headerlink" title="7.1.5 应用于图像合成"></a>7.1.5 应用于图像合成</h3><p>上述理论可直接的应用到二维图像的采样和重构中：假设一个图像，把它想象成一个把二维图像位置(x,y)映射到辐射亮度L的函数f(x,y)→L。利用光线跟踪，可得到任何(x,y)点上的函数值（一般情况下不能在采样前对f进行前置滤波）。因此，采样器会使用两种策略,增加采样速率或是非均匀分布采样。<br>场景函数一般定义为更高维的函数，它额外依赖于时间t和采样的镜头坐标(u,v)。因为相机光线基于这5个参数，改变其中任一变量就会得到一条不同的光线，f的函数值也不同。对于一个特定的图像位置，辐射亮度会随时间的变化而变化（如果场景物体在移动），会随镜头上的位置的变化而变化（如果相机具有有限的光圈大小）。<br>对于更一般的情况，一些积分器使用了统计技术估算沿光线的辐射亮度，它们可能对用一条光线返回不同的辐射亮度值。如果再近一步扩充场景辐射亮度函数，通过积分器包含进采样值（例如在光照计算中，在面光源上选择点的那些值），会得到一个更高维的图像函数：f(x,y,t,u,v,i1,i2,…) -&gt;L。<br>对所有的维度采样是生成高质量图像的关键。如，如果保证图像中(x,y)附近的位置上有不同的镜头(u,v)位置，到的图像质量就会更高，因为每个采样比其邻近的采样更能够代表场景中的信息。</p>
+<h3 id="7-1-6-渲染中走样的原因"><a href="#7-1-6-渲染中走样的原因" class="headerlink" title="7.1.6 渲染中走样的原因"></a>7.1.6 渲染中走样的原因</h3><p>在渲染过程中几何结构很容易产生走样。当把物体投影到图像平面中，物体的边界会产生一个阶梯函数——图像函数的值从一个值马上跳到另一个值。阶梯函数不仅无限的频率组成，更糟的是对走样的采样使用完美的重构滤波器也会出现错误：重构函数中会出现振铃现象(ringing artifact)，又称Gibbs现象。<br>场景中非常小的物体也会产生几何走样。如果几何体足够小，就会落在图像平面上两个采样点的中间，在动画的多个帧中不可预料的消失或出现。<br>另一个走样的原因和物体上的纹理和材料有关。没有正确地滤波的纹理映射或者光亮表面上细小的高光会产生着色走样(shading aliasing)。如果处理这些特征时采样速率不够高，就会走样。此外，物体生成的锋利的阴影也会在最终图像中产生阶梯函数。虽然可能在图像平面上的几何边上确定阶梯函数的位置，但是在阴影边界上探测出阶梯函数要更困难。<br>必须要知道走样本身不能消除。所做的一切都是为了抵消或减弱走样带来的影响。</p>
+<h3 id="7-1-7-理解像素"><a href="#7-1-7-理解像素" class="headerlink" title="7.1.7 理解像素"></a>7.1.7 理解像素</h3><p>关于像素有十分重要的两点。其一，组成图像的像素是图像平面上离散点的点采样(point samples)，像素和面积(area)没有任何联系。Alvy Ray Smith强调把像素看成一个具有有限面积的小方块是绝对错误的思维模型。<br>其二，虽然在最终图像上的像素被像素网格中离散的整数(x,y)定义，但是本章的Sampler使用了连续的浮点数位置(x,y)。二者之间一个很自然的转换方法是将连续坐标转为最近的离散坐标。这个方法把连续坐标转换为同值的离散坐标，但是对于在[x0, x1]上的离散坐标而言，覆盖这个范围的连续坐标范围是[x0-.5, x1+.5)。为此对于一个给定的离散像素范围而言，所生成的连续采样位置都有0.5的偏移量。所以，连续坐标向下取整得到离线坐标，而逆向转换要加上0.5。</p>
+<h2 id="7-2-图像采样接口-P367"><a href="#7-2-图像采样接口-P367" class="headerlink" title="7.2 图像采样接口 P367"></a>7.2 图像采样接口 P367</h2><p>这里讨论几个能够产生良好图像采样模式的类。在实际中，创建良好的采样模式可以实质性提高光线追踪程序的效率。采用较好的采样模式和采用交叉的模式所消耗的执行时间大致相同，但计算图像采样的辐射亮度时计算代价很大，因袭采样模式意义重大。采样的核心声明和函数收录于core/sampler.h和core/sampler.cpp。<br>所有采样器都继承了抽象类Sampler，其中定义了共用接口。采样器的任务是生成一个多维采样位置的序列，其中两维给出了光栅空间中图像采样位置；一维给出采样的时间，范围是从0到1，并比例变换到相机快门打开的时间周期中；还有两个采样值给出镜头位置(u,v)，作用是计算景深，它们的范围也是从0到1。<br>正如位置良好的采样点有助于克服二维图像函数的复杂性，同样，大多数光传输算法也利用采样点工作，例如在面光源上选取位置来估算照明度等，这也是Sampler的工作之一，因为它在选择新采样点时会把邻近图像样本也考虑在内，这样做会提高光传输算法的质量。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;Sampling Declarations&gt; ≡</div><div class="line">    <span class="keyword">class</span> Sampler</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;Sampler Interface <span class="number">340</span>&gt;</div><div class="line">        &lt;Sampler Public Data <span class="number">340</span>&gt;</div><div class="line">    <span class="keyword">protected</span>:</div><div class="line">        &lt;Sampler Protected Methods&gt;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<p>所有采样器的实现都必须传给基类构造器几个共同的参数，包括整个图像的分辨率、为每个像素所生成的采样个数、相机快门开启的时间等。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;Sampler Method Definitions&gt; ≡</div><div class="line">    Sampler::Sampler(<span class="keyword">int</span> xstart, <span class="keyword">int</span> xend, <span class="keyword">int</span> ystart, <span class="keyword">int</span> yend, <span class="keyword">int</span> spp,</div><div class="line">                     <span class="keyword">float</span> sopen, <span class="keyword">float</span> sclose)</div><div class="line">        : xPixelStart(xstart), xPixelEnd(xend), yPixelStart(ystart),</div><div class="line">          yPixelEnd(yend), samplesPerPixel(spp), shutterOpen(sopen),</div><div class="line">          shutterClose(sclose) &#123; &#125;</div></pre></td></tr></table></figure></p>
+<p>Sampler为像素采样的x坐标范围是xPixelStart到xPixelEnd-1，y同理。采样时间要控制在从shutterOpen到shutterClose之间。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;Sampler Public Data&gt; ≡ <span class="number">340</span></div><div class="line">    <span class="keyword">const</span> <span class="keyword">int</span> xPixelStart, xPixelEnd, yPixelStart, yPixelEnd;</div><div class="line">    <span class="keyword">const</span> <span class="keyword">int</span> samplesPerPixel;</div><div class="line">    <span class="keyword">const</span> <span class="keyword">float</span> shutterOpen, shutterClose;</div></pre></td></tr></table></figure></p>
+<p>采样器必须实现纯虚函数Sampler::GetNextSample()。SamplerRendererTask::Run()函数调用该函数，直到它返回0，此时表示所有的采样点已被生成；否则生成一个或多个采样点，返回生成的采样数且填充样本值。除CameraSample::imageX和CameraSample::imageY外，其它所有维的取值范围都在0到1之间。调用方也应为采样器提供RNG，尽管函数本身自备RNG。<br>函数MaximumSampleCount()返回采样值的最大数，它有助于为GetMoreSamples()中的Samples数列预提供内存空间。<br>Samplers可实现函数ReportResults()，作用是允许渲染器向采样器报告那些光线已被生成、辐射亮度是多少并收集交点位置。采样器可利用这些信息做自适应采样。返回值表示样本值是否应该被添加到正在生成的图像中。对一些自适应采样算法来说，采样器可能想要丢弃一些最初的采样集合并产生新的替代它们。本章很少涉及自适应采样，因此默认true。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Sampler Method Definitions&gt; +≡</div><div class="line">    <span class="keyword">bool</span> Sampler::ReportResults(Sample *samples, <span class="keyword">const</span> RayDifferential *rays,</div><div class="line">                                <span class="keyword">const</span> Spectrum *Ls, <span class="keyword">const</span> Intersection *isects,</div><div class="line">                                <span class="keyword">int</span> count)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>回忆，SamplerRenderer将整个图形的渲染工作分成不同的tasks以达到并行。Sampler::Get<br>SubSampler()是这个过程的关键。当场景文件被解析后，一个采样器被创建，它的作用应该是为整个图像采样。这时GetSubSampler()返回新的采样器，其作用范围是整个图像的子集，参数num的范围从0到count-1。这个实现必须保证子采样器合并在一起后它们的采样范围能涵盖整个图像。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">&lt;Sampler Interface&gt; +≡ <span class="number">340</span></div><div class="line">    <span class="function"><span class="keyword">virtual</span> Sampler *<span class="title">GetSubSampler</span><span class="params">(<span class="keyword">int</span> num, <span class="keyword">int</span> count)</span> </span>= <span class="number">0</span>;</div></pre></td></tr></table></figure></p>
+<p>大多数的实现方式是用这个函数把图像分解成矩形块，每个子采样器负责每个小块。给定小块标号和小块总数，辅助函数ComputeSubWindow()可计算出一个像素的采样范围。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;Sampler Method Definitions&gt; +≡</div><div class="line">    <span class="keyword">void</span> Sampler::ComputeSubWindow(<span class="keyword">int</span> num, <span class="keyword">int</span> count, <span class="keyword">int</span> *newXStart,</div><div class="line">                                   <span class="keyword">int</span> *newXEnd, <span class="keyword">int</span> *newYStart,</div><div class="line">                                   <span class="keyword">int</span> *newYEnd) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        &lt;Determine how many tiles to use in each dimension, nx and ny <span class="number">342</span>&gt;</div><div class="line">        &lt;Compute x and y pixel sample range <span class="keyword">for</span> sub-window <span class="number">342</span>&gt;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>矩形块要尽可能接近正方形。开始，设定在x轴上拥有count个矩形块，而y轴上有1个矩形块，然后x轴块数减半y轴块数加倍，直到x轴块数为奇数或x轴块数和y轴分辨率的积小于等于y轴块数和x轴分辨率的积。这时为接近正方形所做的努力，但这一过程不推荐过于复杂的算法。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;Determine how many tiles to use in each dimension, nx and ny&gt; ≡ <span class="number">341</span></div><div class="line">    <span class="keyword">int</span> dx = xPixelEnd - xPixelStart, dy = yPixelEnd - yPixelStart;</div><div class="line">    <span class="keyword">int</span> nx = count, ny = <span class="number">1</span>;</div><div class="line">    <span class="keyword">while</span> ((nx &amp; <span class="number">0x1</span>) == <span class="number">0</span> &amp;&amp; <span class="number">2</span> * dx * ny &lt; dy * nx)</div><div class="line">    &#123;</div><div class="line">        nx &gt;&gt;= <span class="number">1</span>;</div><div class="line">        ny &lt;&lt;= <span class="number">1</span>;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>给定xy方向上的矩形块个数后，整形块编号(xo, yo)和像素范围就能轻易得到。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;Compute x and y pixel sample range <span class="keyword">for</span> sub-window&gt; ≡ <span class="number">341</span></div><div class="line">    <span class="keyword">int</span> xo = num % nx, yo = num / nx;</div><div class="line">    <span class="keyword">float</span> tx0 = <span class="keyword">float</span>(xo) / <span class="keyword">float</span>(nx), tx1 = <span class="keyword">float</span>(xo+<span class="number">1</span>) / <span class="keyword">float</span>(nx);</div><div class="line">    <span class="keyword">float</span> ty0 = <span class="keyword">float</span>(yo) / <span class="keyword">float</span>(ny), ty1 = <span class="keyword">float</span>(yo+<span class="number">1</span>) / <span class="keyword">float</span>(ny);</div><div class="line">    *newXStart = Floor2Int(Lerp(tx0, xPixelStart, xPixelEnd));</div><div class="line">    *newXEnd = Floor2Int(Lerp(tx1, xPixelStart, xPixelEnd));</div><div class="line">    *newYStart = Floor2Int(Lerp(ty0, yPixelStart, yPixelEnd));</div><div class="line">    *newYEnd = Floor2Int(Lerp(ty1, yPixelStart, yPixelEnd));</div></pre></td></tr></table></figure></p>
+<h3 id="7-2-1-采样表示和空间申请"><a href="#7-2-1-采样表示和空间申请" class="headerlink" title="7.2.1 采样表示和空间申请"></a>7.2.1 采样表示和空间申请</h3><p>采样器用Sample结构来存放一个采样。调用函数GetMoreSamples()完成对一个或多个采样的初始化，之后函数SamplerRendererTask::Run()将采样传递至相机和积分器，相机和积分器利用采样中的值完成相机光线的生成和照明计算。<br>采样器继承自CameraSample结构，而CameraSample中只有生成相机光线所必须的样本值。这种分离设计允许只将CameraSample传至Camera::GenerateRay()函数中，不需要向相机类展示采样结构体的细节部分。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Sampling Declarations&gt; +≡</div><div class="line">    <span class="keyword">struct</span> CameraSample</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> imageX, imageY;</div><div class="line">        <span class="keyword">float</span> lensU, lensV;</div><div class="line">        <span class="keyword">float</span> time;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<p>Sampler构造函数调用面积分器和体积分器的Intergrator::RequestSamples()确定积分器需要何种采样。积分器可以请求多个一维和/或二维采样模式，每个模式可以有任意个采样。例，某场景有两个区域光源，积分器追踪到前者的4条阴影光线和后者的8条阴影光线，那么积分器会申请两个二维采样，分别为4个和8个。相似，如果积分器想在多个光源中选择一个，那么申请一个带有一个单值的一维模式，并利用它的浮点值去随机地选择一个光源。<br>积分器尽其所需地向采样器请求随机采样，采样器仔细地构造出覆盖整个高维采样空间的采样点。例，在计算区域光源照明时，如果附近的图像采样倾向于在面光源不同的位置进行采样，就会得到更多的信息，成像结果更佳。<br>PBRT不允许积分器请求三维或更高维的采样模式，因为它们对要实现的渲染算法没什么用处。如果必须这么做，积分器可以把来自低维模式的点组合成高维的采样点。在绝对必要的情况下，积分器可以自己生成一个三维采样模式，尽管很难保证在3D空间下相邻的采样点会采集不同的区域。<br>函数Integrator::RequestSample()负责积分器的实现，它调用Sample::Add1D()和Sample::Add2D()，而这两个函数需要另一个给定数目的采样序列。调用完毕后，Sample构造函数为采样值申请内存。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">&lt;Sample Method Definitions&gt; ≡</div><div class="line">Sample::Sample(Sampler *sampler, SurfaceIntegrator *surf,</div><div class="line">               VolumeIntegrator *vol, <span class="keyword">const</span> Scene *scene)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">if</span> (surf) </div><div class="line">        &#123;</div><div class="line">            surf-&gt;RequestSamples(sampler, <span class="keyword">this</span>, scene);</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">if</span> (vol)</div><div class="line">        &#123;</div><div class="line">            vol-&gt;RequestSamples(sampler, <span class="keyword">this</span>, scene);</div><div class="line">        &#125;</div><div class="line">        AllocateSampleMemory();</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>Sample::Add1D()和Sample::Add2D()把所请求的采样数记录到数组中并返回索引，供积分器在Sample里存取所需采样值。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">&lt;Sample Public Methods&gt; ≡ <span class="number">343</span></div><div class="line">    <span class="keyword">uint32_t</span> Add1D(<span class="keyword">uint32_t</span> num)</div><div class="line">    &#123;</div><div class="line">        n1D.push_back(num);</div><div class="line">        <span class="keyword">return</span> n1D.size()<span class="number">-1</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&lt;Sample Public Methods&gt; +≡ <span class="number">343</span></div><div class="line">    <span class="keyword">uint32_t</span> Add2D(<span class="keyword">uint32_t</span> num)</div><div class="line">    &#123;</div><div class="line">        n2D.push_back(num);</div><div class="line">        <span class="keyword">return</span> n2D.size()<span class="number">-1</span>;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>大多数采样器更擅长于生成某些特定数目的采样，例如LDSampler的采样数必须是2的幂。函数Sampler::RoundSize()用于提供这类信息，积分器将所需采样数传给此函数，经此函数整修后，积分器将返回值最为修正后的采样值返回到Sampler中。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">&lt;Sampler Interface&gt; +≡ <span class="number">340</span></div><div class="line">    <span class="function"><span class="keyword">virtual</span> <span class="keyword">int</span> <span class="title">RoundSize</span><span class="params">(<span class="keyword">int</span> size)</span> <span class="keyword">const</span> </span>= <span class="number">0</span>;</div></pre></td></tr></table></figure></p>
+<p>Sampler负责把产生的采样存贮在Sample:oneD和Sample::twoD两个数组中。对于一维采样模式，Sampler要生成n1D.size()个相互独立的模式，第i个模式有n1D[i]个采样值。这些值分别存放在二维数组oneD[i][0]到oneD[i][n1D[i]-1]中。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&lt;Sample Public Data&gt; ≡ <span class="number">343</span></div><div class="line">    <span class="built_in">vector</span>&lt;<span class="keyword">uint32_t</span>&gt; n1D, n2D;</div><div class="line">    <span class="keyword">float</span> **oneD, **twoD;</div></pre></td></tr></table></figure></p>
+<p>为了存取采样，积分器把从Add1D()返回的采样数组索引放在某成员变量（例如sampleOffset）中。二维处理同理，只不过第i个采样需要两个值：sample-&gt;twoD[offset][2<em>i]和sample-&gt;twoD[offset][2</em>i+1]。<br>当所有的采样申请完成之后，需要为其分配内存空间。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Sample Method Definitions&gt; +≡</div><div class="line">    <span class="keyword">void</span> Sample::AllocateSampleMemory()</div><div class="line">    &#123;</div><div class="line">        &lt;Allocate storage <span class="keyword">for</span> sample pointers <span class="number">345</span>&gt;</div><div class="line">        &lt;Compute total number of sample values needed <span class="number">345</span>&gt;</div><div class="line">        &lt;Allocate storage <span class="keyword">for</span> sample values <span class="number">346</span>&gt;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>首先，为指针申请内存，它一次性为一维和二维两个样本数组分配足够的内存空间。把twoD设置为oneD的最后一个指针之后，保证oneD和twoD指针位置的临近可降低缓存缺失。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;Allocate storage <span class="keyword">for</span> sample pointers&gt; ≡ <span class="number">345</span></div><div class="line">    <span class="keyword">int</span> nPtrs = n1D.size() + n2D.size();</div><div class="line">    <span class="keyword">if</span> (!nPtrs)</div><div class="line">    &#123;</div><div class="line">        oneD = twoD = <span class="literal">NULL</span>;</div><div class="line">        <span class="keyword">return</span>;</div><div class="line">    &#125;</div><div class="line">    oneD = AllocAligned&lt;<span class="keyword">float</span> *&gt;(nPtrs);</div><div class="line">    twoD = oneD + n1D.size();</div></pre></td></tr></table></figure></p>
+<p>然后使用一些trick为实际采样值申请连续的内存。首先，先确定所需float的总数：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;Compute total number of sample values needed&gt; ≡ <span class="number">345</span></div><div class="line">    <span class="keyword">int</span> totSamples = <span class="number">0</span>;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; n1D.size(); ++i)</div><div class="line">    &#123;</div><div class="line">        totSamples += n1D[i];</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; n2D.size(); ++i)</div><div class="line">    &#123;</div><div class="line">        totSamples += <span class="number">2</span> * n2D[i];</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>然后申请一块连续的大块内存，然后对oneD和twoD里的指针赋上相应的内存地址。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">&lt;Allocate storage <span class="keyword">for</span> sample values&gt; ≡ <span class="number">345</span></div><div class="line">    <span class="keyword">float</span> *mem = AllocAligned&lt;<span class="keyword">float</span>&gt;(totSamples);</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; n1D.size(); ++i)</div><div class="line">    &#123;</div><div class="line">        oneD[i] = mem;</div><div class="line">        mem += n1D[i];</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; n2D.size(); ++i)</div><div class="line">    &#123;</div><div class="line">        twoD[i] = mem;</div><div class="line">        mem += <span class="number">2</span> * n2D[i];</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>最后实现Sampler的析构函数，释放动态申请的内存。</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/CG/" rel="tag">#CG</a>
+          
+            <a href="/tags/PBRT/" rel="tag">#PBRT</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/09/05/pbrt-ch6/" rel="next" title="PBRT 章节6 相机模型">
+                <i class="fa fa-chevron-left"></i> PBRT 章节6 相机模型
+              </a>
+            
+          </div>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel ">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.png"
+               alt="Sulpures" />
+          <p class="site-author-name" itemprop="name">Sulpures</p>
+          <p class="site-description motion-element" itemprop="description">「今せぇいっぱい生きよう」</p>
+        </div>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">8</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">1</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+            
+              
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#7-1-采样理论-P352"><span class="nav-number">1.</span> <span class="nav-text">7.1 采样理论 P352</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#7-1-1-频域和傅立叶变换"><span class="nav-number">1.1.</span> <span class="nav-text">7.1.1 频域和傅立叶变换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-1-2-理想的采样和重构"><span class="nav-number">1.2.</span> <span class="nav-text">7.1.2 理想的采样和重构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-1-3-走样"><span class="nav-number">1.3.</span> <span class="nav-text">7.1.3 走样</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-1-4-反走样技术"><span class="nav-number">1.4.</span> <span class="nav-text">7.1.4 反走样技术</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-1-5-应用于图像合成"><span class="nav-number">1.5.</span> <span class="nav-text">7.1.5 应用于图像合成</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-1-6-渲染中走样的原因"><span class="nav-number">1.6.</span> <span class="nav-text">7.1.6 渲染中走样的原因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-1-7-理解像素"><span class="nav-number">1.7.</span> <span class="nav-text">7.1.7 理解像素</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-2-图像采样接口-P367"><span class="nav-number">2.</span> <span class="nav-text">7.2 图像采样接口 P367</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#7-2-1-采样表示和空间申请"><span class="nav-number">2.1.</span> <span class="nav-text">7.2.1 采样表示和空间申请</span></a></li></ol></li></ol></div>
+            
+          </div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2016</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Sulpures</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/vendors/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.0.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.0.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.0.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.0.1"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+  
+  
+
+  
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+        processEscapes: true,
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+  </script>
+
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for (i=0; i < all.length; i += 1) {
+        all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+    });
+  </script>
+  <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+  
+
+  
+
+</body>
+</html>
