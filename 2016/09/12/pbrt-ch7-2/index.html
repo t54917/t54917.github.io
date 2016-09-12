@@ -1,0 +1,679 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/vendors/font-awesome/css/font-awesome.min.css?v=4.4.0" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.0.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="CG,PBRT," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.0.1" />
+
+
+
+
+
+
+<meta name="description" content="7.3 分层采样 P375分层采样器(Stratified Sampler)，把图像平面分割成称为层(strata)的矩形区域并在每个区域中生成一个采样。算法关键要求分割不重叠且每个区域只取一个采样。这样做无法保证采样间的距离足够相近，因此可能丢失图像特征。但反过来讲，若许多的采样都集中于采样空间临近点附近也未必会得到额外的图像信息。这里隐形定义了整体采样速率的决定值：层数。分层采样器利用抖动(j">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PBRT 章节7 采样与重构 2/3">
+<meta property="og:url" content="http://sulpures.me/2016/09/12/pbrt-ch7-2/index.html">
+<meta property="og:site_name" content="僕だけ居る">
+<meta property="og:description" content="7.3 分层采样 P375分层采样器(Stratified Sampler)，把图像平面分割成称为层(strata)的矩形区域并在每个区域中生成一个采样。算法关键要求分割不重叠且每个区域只取一个采样。这样做无法保证采样间的距离足够相近，因此可能丢失图像特征。但反过来讲，若许多的采样都集中于采样空间临近点附近也未必会得到额外的图像信息。这里隐形定义了整体采样速率的决定值：层数。分层采样器利用抖动(j">
+<meta property="og:updated_time" content="2016-09-12T14:10:10.489Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="PBRT 章节7 采样与重构 2/3">
+<meta name="twitter:description" content="7.3 分层采样 P375分层采样器(Stratified Sampler)，把图像平面分割成称为层(strata)的矩形区域并在每个区域中生成一个采样。算法关键要求分割不重叠且每个区域只取一个采样。这样做无法保证采样间的距离足够相近，因此可能丢失图像特征。但反过来讲，若许多的采样都集中于采样空间临近点附近也未必会得到额外的图像信息。这里隐形定义了整体采样速率的决定值：层数。分层采样器利用抖动(j">
+
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: 0,
+      author: '博主'
+    }
+  };
+</script>
+
+
+
+
+  <link rel="canonical" href="http://sulpures.me/2016/09/12/pbrt-ch7-2/"/>
+
+  <title> PBRT 章节7 采样与重构 2/3 | 僕だけ居る </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">僕だけ居る</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+  <p class="site-subtitle"></p>
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                PBRT 章节7 采样与重构 2/3
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            <span class="post-meta-item-icon">
+              <i class="fa fa-calendar-o"></i>
+            </span>
+            <span class="post-meta-item-text">发表于</span>
+            <time itemprop="dateCreated" datetime="2016-09-12T22:09:39+08:00" content="2016-09-12">
+              2016-09-12
+            </time>
+          </span>
+
+          
+            <span class="post-category" >
+              &nbsp; | &nbsp;
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                  <a href="/categories/Graphics/" itemprop="url" rel="index">
+                    <span itemprop="name">Graphics</span>
+                  </a>
+                </span>
+
+                
+                
+
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+
+          
+          
+
+          
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="7-3-分层采样-P375"><a href="#7-3-分层采样-P375" class="headerlink" title="7.3 分层采样 P375"></a>7.3 分层采样 P375</h2><p>分层采样器(Stratified Sampler)，把图像平面分割成称为层(strata)的矩形区域并在每个区域中生成一个采样。算法关键要求分割不重叠且每个区域只取一个采样。这样做无法保证采样间的距离足够相近，因此可能丢失图像特征。但反过来讲，若许多的采样都集中于采样空间临近点附近也未必会得到额外的图像信息。这里隐形定义了整体采样速率的决定值：层数。<br>分层采样器利用抖动(jittering)的方式决定每个采样点在层中的随机位置：把层的中心点随机地偏移一个位移，偏移量上限是层宽或层高的一半。抖动所产生的不均匀性把走样转换成了噪声。采样器同样提供了非抖动模式，即在层中进行均匀采样，这个模式一般用于比较不同的采样技术，而非用其生成最终的图像。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;StratifiedSampler Declarations&gt; ≡</div><div class="line">    <span class="keyword">class</span> StratifiedSampler : <span class="keyword">public</span> Sampler</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;StratifiedSampler Public Methods <span class="number">349</span>&gt;</div><div class="line">    <span class="keyword">private</span>:</div><div class="line">        &lt;StratifiedSampler Private Data <span class="number">349</span>&gt;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<p>StratifiedSampler从左到右、从上到下的循环像素生成采样。构造函数所需的参数是：生成采样的像素范围、xy轴上的层数、是否抖动采样的布尔值、相机快门开启的时间。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">&lt;StratifiedSampler Method Definitions&gt; ≡</div><div class="line">    StratifiedSampler::StratifiedSampler(<span class="keyword">int</span> xstart, <span class="keyword">int</span> xend,</div><div class="line">            <span class="keyword">int</span> ystart, <span class="keyword">int</span> yend, <span class="keyword">int</span> xs, <span class="keyword">int</span> ys, <span class="keyword">bool</span> jitter,</div><div class="line">            <span class="keyword">float</span> sopen, <span class="keyword">float</span> sclose)</div><div class="line">        : Sampler(xstart, xend, ystart, yend, xs * ys, sopen, sclose)</div><div class="line">    &#123;</div><div class="line">        jitterSamples = jitter;</div><div class="line">        xPos = xPixelStart;</div><div class="line">        yPos = yPixelStart;</div><div class="line">        xPixelSamples = xs;</div><div class="line">        yPixelSamples = ys;</div><div class="line">        sampleBuf = <span class="keyword">new</span> <span class="keyword">float</span>[<span class="number">5</span> * xPixelSamples * yPixelSamples];</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>采样器保有当前像素的坐标xPos和yPos，初始化值为图像的左上角。注意在裁剪窗口和采样滤波处理的情况下，该值并不一定是(0，0)。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;StratifiedSampler Private Data&gt; ≡ <span class="number">349</span></div><div class="line">    <span class="keyword">int</span> xPixelSamples, yPixelSamples;</div><div class="line">    <span class="keyword">bool</span> jitterSamples;</div><div class="line">    <span class="keyword">int</span> xPos, yPos;</div><div class="line">    <span class="keyword">float</span> *sampleBuf;</div></pre></td></tr></table></figure></p>
+<p>StratifiedSampler对于采样值个数没有偏好，因此RoundSize()只返回它本身。函数GetSubSampler()使用函数ComputeSubwindow()计算图像块的范围并且返回在那个范围内生成采样的新StratifiedSampler实例。ComputeSubWindow()可能返回一个空的像素范围，因此调用它的函数必须允许这一情况的出现。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">&lt;StratifiedSampler Method Definitions&gt; +≡</div><div class="line">    Sampler *StratifiedSampler::GetSubSampler(<span class="keyword">int</span> num, <span class="keyword">int</span> count)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">int</span> x0, x1, y0, y1;</div><div class="line">        ComputeSubWindow(num, count, &amp;x0, &amp;x1, &amp;y0, &amp;y1);</div><div class="line">        <span class="keyword">if</span> (x0 == x1 || y0 == y1)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> <span class="literal">NULL</span>;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">return</span> <span class="keyword">new</span> StratifiedSampler(x0, x1, y0, y1, xPixelSamples,</div><div class="line">            yPixelSamples, jitterSamples, shutterOpen, shutterClose);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>在高维采样中直接使用分层会导致数目惊人的采样。例，对图像、镜头、时间的五维空间在每个维上分为4个层，则每个像素有1024个采样。一种解决方式是计算低维子集的分层模式，再把这些维子集上的采样随机联系起来。例如，要求每个像素上取4个采样，先对所有的维进行：分层生成4个分层的2D图像采样，4个分层的1D时间采样，4个分层的2D镜头采样。然后随机把一个时间采样和一个镜头采样与每个图像采样相联系，结果每个像素的采样都具有对采样空间的良好的覆盖性。<br>鉴于这种方法，函数GetMoreSamples()得以实现。先检查区域内采样是否已生成：因为其始于(xPixelStart, yPixelStart)且先扫描x轴再扫描y轴，因此yPos=yPixelEnd时遍历结束，返回0告知调用者采样器已完成其工作。否则，生成采样像素的值，返回给采样数组。<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">&lt;StratifiedSampler Method Definitions&gt; +≡</div><div class="line">    int StratifiedSampler::GetMoreSamples(Sample *samples, RNG &amp;rng)</div><div class="line">    &#123;</div><div class="line">        if (yPos == yPixelEnd)</div><div class="line">        &#123;</div><div class="line">            return 0;</div><div class="line">        &#125;</div><div class="line">        int nSamples = xPixelSamples * yPixelSamples;</div><div class="line">        &lt;Generate stratified camera samples for (xPos, yPos) 352&gt;</div><div class="line">        &lt;Advance to next pixel for stratified sampling 357&gt;</div><div class="line">        return nSamples;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&lt;Generate stratified camera samples for (xPos, yPos)&gt; ≡ 351</div><div class="line">    &lt;Generate initial stratified samples into sampleBuf memory 352&gt;</div><div class="line">    &lt;Shift stratified image samples to pixel coordinates 353&gt;</div><div class="line">    &lt;Decorrelate sample dimensions 353&gt;</div><div class="line">    &lt;Initialize stratified samples with sample values 354&gt;</div></pre></td></tr></table></figure></p>
+<p>首先，分层采样习惯于为相机采样生成两个2D和一个1D采样模式，这些采样值被储存到sampleBuf中。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">&lt;Generate initial stratified samples into sampleBuf memory&gt; ≡ <span class="number">352</span></div><div class="line">    <span class="keyword">float</span> *bufp = sampleBuf;</div><div class="line">    <span class="keyword">float</span> *imageSamples = bufp; </div><div class="line">    bufp += <span class="number">2</span> * nSamples;</div><div class="line">    <span class="keyword">float</span> *lensSamples = bufp;</div><div class="line">    bufp += <span class="number">2</span> * nSamples;</div><div class="line">    <span class="keyword">float</span> *timeSamples = bufp;</div><div class="line">    StratifiedSample2D(imageSamples, xPixelSamples, yPixelSamples, rng,</div><div class="line">                       jitterSamples);</div><div class="line">    StratifiedSample2D(lensSamples, xPixelSamples, yPixelSamples, rng,</div><div class="line">                       jitterSamples);</div><div class="line">    StratifiedSample1D(timeSamples, xPixelSamples * yPixelSamples, rng,</div><div class="line">                       jitterSamples);</div></pre></td></tr></table></figure></p>
+<p>1D和2D的分层采样单独实现为工具函数。这两个函数只是对[0,1]范围内给定的层进行循环，在每个层上放置一个采样值。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line">&lt;Sampling Function Definitions&gt; ≡</div><div class="line">    <span class="function"><span class="keyword">void</span> <span class="title">StratifiedSample1D</span><span class="params">(<span class="keyword">float</span> *samp, <span class="keyword">int</span> nSamples, RNG &amp;rng,</span></span></div><div class="line">                            <span class="keyword">bool</span> jitter)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> invTot = <span class="number">1.f</span> / nSamples;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nSamples; ++i)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">float</span> delta = jitter ? rng.RandomFloat() : <span class="number">0.5f</span>;</div><div class="line">            *samp++ = (i + delta) * invTot;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&lt;Sampling Function Definitions&gt; +≡</div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">StratifiedSample2D</span><span class="params">(<span class="keyword">float</span> *samp, <span class="keyword">int</span> nx, <span class="keyword">int</span> ny, RNG &amp;rng,</span></span></div><div class="line">                        <span class="keyword">bool</span> jitter)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> dx = <span class="number">1.f</span> / nx, dy = <span class="number">1.f</span> / ny;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> y = <span class="number">0</span>; y &lt; ny; ++y)</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> x = <span class="number">0</span>; x &lt; nx; ++x)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">float</span> jx = jitter ? rng.RandomFloat() : <span class="number">0.5f</span>;</div><div class="line">            <span class="keyword">float</span> jy = jitter ? rng.RandomFloat() : <span class="number">0.5f</span>;</div><div class="line">            *samp++ = (x + jx) * dx;</div><div class="line">            *samp++ = (y + jy) * dy;</div><div class="line">        &#125;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>StratifiedSample2D()在[0,1]范围内生成采样，但图像采样要用连续的像素坐标来表示。GetMoreSamples()要对所有新生成的层采样循环，加上(x,y)像素值。这样对离散的(x,y)像素范围而言的采样，它们的连续变化范围是[x, x+1) x [y,y+1)，并遵循了7.1.7节中使用连续像素坐标的约定规则。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;Shift stratified image samples to pixel coordinates&gt; ≡ <span class="number">352</span></div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> o = <span class="number">0</span>; o &lt; <span class="number">2</span> * xPixelSamples * yPixelSamples; o += <span class="number">2</span>)</div><div class="line">    &#123;</div><div class="line">        imageSamples[o] += xPos;</div><div class="line">        imageSamples[o+<span class="number">1</span>] += yPos;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>为了把时间采样和镜头采样随机关联到图像采样，Shuffle()函数打乱时间和镜头采样的数组顺序。因此之后使用第i个预计算的采样值初始化一个Sample时，只返回第i个时间和镜头采样即可。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&lt;Decorrelate sample dimensions&gt; ≡ <span class="number">352</span></div><div class="line">    Shuffle(lensSamples, xPixelSamples*yPixelSamples, <span class="number">2</span>, rng);</div><div class="line">    Shuffle(timeSamples, xPixelSamples*yPixelSamples, <span class="number">1</span>, rng);</div></pre></td></tr></table></figure></p>
+<p>Shuffle()随机交换一个采样模式中的采样值。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">&lt;Monte Carlo Utility Declarations&gt; ≡</div><div class="line">    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div><div class="line">    <span class="function"><span class="keyword">void</span> <span class="title">Shuffle</span><span class="params">(T *samp, <span class="keyword">uint32_t</span> count, <span class="keyword">uint32_t</span> dims, RNG &amp;rng)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; count; ++i)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">uint32_t</span> other = i + (rng.RandomUInt() % (count - i));</div><div class="line">            <span class="keyword">for</span> (<span class="keyword">uint32_t</span> j = <span class="number">0</span>; j &lt; dims; ++j)</div><div class="line">            &#123;</div><div class="line">                swap(samp[dims*i + j], samp[dims*other + j]);</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>现在相机采样已被偏移，且镜头和时间采样已被洗牌。将采样值从临时缓存中取出存入samples中。执行此步时，这些采样的采样值也被积分器所需要。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;Initialize stratified samples with sample values&gt; ≡ <span class="number">352</span></div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nSamples; ++i)</div><div class="line">    &#123;</div><div class="line">        samples[i].imageX = imageSamples[<span class="number">2</span>*i];</div><div class="line">        samples[i].imageY = imageSamples[<span class="number">2</span>*i+<span class="number">1</span>];</div><div class="line">        samples[i].lensU = lensSamples[<span class="number">2</span>*i];</div><div class="line">        samples[i].lensV = lensSamples[<span class="number">2</span>*i+<span class="number">1</span>];</div><div class="line">        samples[i].time = Lerp(timeSamples[i], shutterOpen, shutterClose);</div><div class="line">        &lt;Generate stratified samples <span class="keyword">for</span> integrators <span class="number">356</span>&gt;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>积分器使问题更复杂：它常在某些维上要对每个图像采样使用多重采样，而不像相机采样那样对镜头和时间只需要一个采样值。这令人为难：如果一个积分器需要为每个图像采样申请64个二维采样值，采样器就要实现两个不同的目标：<br>其一，希望每个图像采样的64个积分器采样有很好的二维分布(如分布在8x8的层网格内)。分层会改进积分器在每个采样的结果。<br>其二，还希望能保证一个图像采样的积分器采样集合和它相邻的图像采样相比，不要太近似。就像时间采样和镜头采样那样，希望采样点相对于它们的邻居能有很好的分布，在单个像素的周围区域对采样空间有很好的覆盖。<br>StratifiedSampler只着重解决第一个问题。<br>第二个跟积分器相关的复杂性是：积分器可能会为每个图像采样申请任意数目的采样，这使得分层很难进行（如，如何为7个采样生成一个2D分层模式）。解决方法是使用拉丁超立方体采样(Latin hypercube sampling, LHS)，它可以生成任意维度任何数目的采样，同时有很好的分布。<br>LHS将每个维上的轴平均分成n等分，在位于对角线的n个区域中生成一个抖动的采样，然后这些采样在各自的维上随机移动。LHS的一个优点是减少了采样点在某个维的轴投影所产生的拥挤现象。<br>尽管LHS解决了采样点的拥挤问题，但很容易构造出这样的情形：许多采样点的位置共线，或[0,1]x[0,1]的大块区域中没有采样点。特别是n增大时，LHS跟分层采样相比效率底下。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;Generate stratified samples <span class="keyword">for</span> integrators&gt; ≡ <span class="number">354</span></div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> j = <span class="number">0</span>; j &lt; samples[i].n1D.size(); ++j)</div><div class="line">    &#123;</div><div class="line">        LatinHypercube(samples[i].oneD[j], samples[i].n1D[j], <span class="number">1</span>, rng);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> j = <span class="number">0</span>; j &lt; samples[i].n2D.size(); ++j)</div><div class="line">    &#123;</div><div class="line">        LatinHypercube(samples[i].twoD[j], samples[i].n2D[j], <span class="number">2</span>, rng);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>通用的LatinHypercube()函数可以在任意维度生成任意数目的LHS采样。因此sample数组的元素个数为nSamples * nDim。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">&lt;Sampling Function Definitions&gt; +≡</div><div class="line">    <span class="function"><span class="keyword">void</span> <span class="title">LatinHypercube</span><span class="params">(<span class="keyword">float</span> *samples, <span class="keyword">uint32_t</span> nSamples, <span class="keyword">uint32_t</span> nDim,</span></span></div><div class="line">                        RNG &amp;rng)</div><div class="line">    &#123;</div><div class="line">        &lt;Generate LHS samples along diagonal <span class="number">356</span>&gt;</div><div class="line">        &lt;Permute LHS samples in each dimension <span class="number">356</span>&gt;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&lt;Generate LHS samples along diagonal&gt; ≡ <span class="number">356</span></div><div class="line">    <span class="keyword">float</span> delta = <span class="number">1.f</span> / nSamples;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; nSamples; ++i)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">uint32_t</span> j = <span class="number">0</span>; j &lt; nDim; ++j)</div><div class="line">        &#123;</div><div class="line">            samples[nDim * i + j] = (i + (rng.RandomFloat())) * delta;</div><div class="line">        &#125;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>在进行排列时，该函数对所有采样进行循环，一次在一个维上做随机排列。注意这和前面的Shuffle()函数不同：Shuffle()移动整个的nDims元素所做构成的块，而LatinHypercube()对nDims块中某个元素进行独立的洗牌。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;Permute LHS samples in each dimension&gt; ≡ <span class="number">356</span></div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; nDim; ++i)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">uint32_t</span> j = <span class="number">0</span>; j &lt; nSamples; ++j)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">uint32_t</span> other = j + (rng.RandomUInt() % (nSamples - j));</div><div class="line">            swap(samples[nDim * j + i], samples[nDim * other + i]);</div><div class="line">        &#125;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>当一个像素的采样值被生成后，StratifiedSampler推进到下一像素。首先尝试推进到x轴的下一位，若超出采样方位，则回到x轴起始位并推进到y轴的下一位。当y轴抵达采样范围的底部时，样本生成过程结束。最后，调用函数MaximumSampleCount()记录样本数。</p>
+<h2 id="7-4-低差异采样-P388"><a href="#7-4-低差异采样-P388" class="headerlink" title="7.4 低差异采样 P388"></a>7.4 低差异采样 P388</h2><p>StratifiedSampler的目标是生成分布良好但不均匀的采样点集，其中没有两个采样点间距离太近，也不要出现过大的采样空间区域内没有采样的情况。抖动模式优于随机模式，但容易出现两个相邻层的采样点靠近其共享边的情况，这时候采样区域会留白。<br>数学概念上的差异(discrepancy)，是对一个模式采样位置分布的质量进行数值上的评估，分布良好的模式具有低差异值。</p>
+<h3 id="7-4-1-差异的定义"><a href="#7-4-1-差异的定义" class="headerlink" title="7.4.1 差异的定义"></a>7.4.1 差异的定义</h3><p>差异是为了评估n维空间[0,1]^n上一组点集分布的质量。为此，要对每个区域中的采样点计数，然后把每个采样区域的体积和区域内采样点数进行比较。一般的，一个区域的体积的分数值应约等于其中采样点数目的分数值。虽然实际上不会总是如此，但仍然利用它缩小实际体积和理想体积的差值。<br>为计算一个点集的差异值，首先选择一簇形状B(a family of shapes)，这些形状是[0,1]^n的子集。例，常使用一个角在原点的盒子，这时集合B为：<br>$$B={[0,v_1]\times[0,v_2]\times \ \dots \times[0,v_s]}$$<br>其中vi∈[0,1]。给定一个采样序列 P=x1, x2, …, xN，P关于B的差异如下。其中，#(xi∈b)是b中的点数，λ(b)是b的体积，sup运算是指取一串离散点的最大值。<br>$$D<em>N(B,P)=\sup</em>{b\in B}|\frac{\sharp (x_i\in b)}{N}-\lambda(b)|$$<br>关于上述式子，#(xi∈b)/N利用点集P近似估算盒子b的体积，因此，差异（discrepancy）就是估算体积和实际体积的最大误差。如果形状集合B是一组角位于原点的盒子，则称之为星差异(star discrepancy) D<em>N(P)。另一个B的常见选择是和轴平行的盒子。<br>对于一些特定的点集，可分析计算出差异。例，对于一维上的点集：<br>$$x_i=\frac{i}{N}$$<br>可以得到xi的星差异为：<br>$$D^{</em>}_N(x_1,\dots,x_n)=\frac{1}{N}$$<br>例，当取间隔b=[0, 1/N)时，λ(b)=1/N，但#(xi ϵ b)=0。在这个间隔里就产生了体积和点在区域内的分数值的最大差值。<br>把这个序列稍作改动：<br>$$x_i=\frac{i-\frac{1}{2}}{N}$$<br>那么该序列的星差异为：<br>$$D^<em>_N(x_i)=\frac{1}{2N}$$<br>那么一维点序列星差异的界值为：<br>$$D^</em><em>N=\frac{1}{2N}+\max</em>{1\leq i\leq N}|x_i-\frac{2i-1}{2N}|$$<br>因此，前面改动过的序列有一维最低差异序列。一般而言，分析和计算一维序列的差异界值要比高维更容易。对于难以构造的点序列、高维序列、不规则的形状，常需要构造大量的形状来计算它们的差异值。<br>稍有常识的人都能看出，根据低差异值的测量标准，这个一维的均匀序列是最优的。但对于2D的图像采样而言均匀模式的视觉效果较差，索性高维的低差异模式要比一维的模式而言更不均匀，因此在实际中效果差强人意。但是，这种均匀性也使得低差异模式和具有真正的伪随机变化的模式相比更容易产生走样。</p>
+<h3 id="7-4-2-哈默斯利和霍尔顿序列"><a href="#7-4-2-哈默斯利和霍尔顿序列" class="headerlink" title="7.4.2 哈默斯利和霍尔顿序列"></a>7.4.2 哈默斯利和霍尔顿序列</h3><p>本节介绍低差异序列生成方式。第一种将要描述的方式使用了根基反转(radical<br>inverse)的构造方式，其基础是，一个正整数n可被以b为基础的数字序列dm…d2d1唯一表示。<br>$$n=\sum_{i=1}^{\infty}d_ib^{i-1}$$<br>基b的根基反转函数Φb把非负整数n转换为[0,1)内的浮点数。<br>$$\Phi_b(n)=0.d_1d_2\dots d_m$$<br>因此，数字di对根基反转的贡献值是di/bi。函数RadicalInverse()计算数n在基base下根基反转的值：它将n除以base得到余数d1，并把$d_1b^{-1}$累加到根基反转值上，之后n除以base去掉尾数，以此迭代直到找到最后一个非零的di值。<br>最简单的低差异序列之一是van der Corput序列，它是使用基2根基反转方法生成的一维序列：xi = Φ2(i)。<br>该序列的差异值为：<br>$$D^<em>_N(P)=O(\frac{\log N}{N})$$<br>d维的无限序列的差异值为：<br>$$D^</em>_N(P)=O(\frac{(\log N)^d}{N})$$<br>两个著名的任意维数的低差异序列是Halton序列和Hammersley <del>蛤膜丝利，吼啊</del> 序列，都由根基反转方法生成。<br>为生成n维的Halton序列，要求每个维上使用不同的基且这些基必须互为质数，一般选择前n个质数(p1, …, pn)。<br>$$x_i=(\Phi_2(i),\Phi_3(i),\Phi<em>5(i),\dots,\Phi</em>{pn}(i))$$<br>Halton序列的一大优点在于可用于采样总数不确定的情况下：序列的所有前缀分布良好，新采样添加后也会保持序列的低差异值。例，PhotonIntegrator使用了Halton序列，因为它事先无法得知光源放射出多少光子。d维Halton序列的差异如下，渐近最优。<br>$$D^<em>_N(x_i)=O(\frac{(\log N)^d}{N})$$<br>如果采样个数是固定的，那么可用Hammersley点集。Hammersley点集定义如下，其中N是采样总数，同样要求所有的基互质。<br>$$x<em>i=(\frac{i}{N},\Phi</em>{b1}(i),\Phi<em>{b2}(i),\dots,\Phi</em>{bn}(i))$$<br><em>*Halton采样</em></em><br>HaltonSampler使用Halton序列生成图像、镜头、时间的采样。对每个相机采样，它使用拉丁超立方体模式为积分器生成样本点。<br>HaltonSampler的构造函数需要的参数有像素到样本的程度、每像素采样数、相机快门开关时间，之后计算出将要生成的采样总数wantedSamples并初始化当前计数currentSample为零。对于非正方形图像，根据x、y轴中较大分辨率生成图像，之后再裁剪。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">&lt;HaltonSampler Method Definitions&gt; ≡</div><div class="line">    <span class="keyword">int</span> HaltonSampler::GetMoreSamples(Sample *samples, RNG &amp;rng)</div><div class="line">    &#123;</div><div class="line">    retry:</div><div class="line">        <span class="keyword">if</span> (currentSample &gt;= wantedSamples)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">        &#125;</div><div class="line">        &lt;Generate sample with Halton sequence and reject <span class="keyword">if</span> outside image extent <span class="number">365</span>&gt;</div><div class="line">        &lt;Generate lens, time, and integrator samples <span class="keyword">for</span> HaltonSampler <span class="number">366</span>&gt;</div><div class="line">        <span class="keyword">return</span> <span class="number">1</span>;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>函数GetMoreSamples()的第一件事是生成imageX和imageY的采样，如果它们超出采样范围，拒绝此操作并尝试下一采样点。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">&lt;Generate sample with Halton sequence and reject <span class="keyword">if</span> outside image extent&gt; ≡ <span class="number">364</span></div><div class="line">    <span class="keyword">float</span> u = (<span class="keyword">float</span>)RadicalInverse(currentSample, <span class="number">3</span>);</div><div class="line">    <span class="keyword">float</span> v = (<span class="keyword">float</span>)RadicalInverse(currentSample, <span class="number">2</span>);</div><div class="line">    <span class="keyword">float</span> lerpDelta = <span class="keyword">float</span>(max(xPixelEnd - xPixelStart,</div><div class="line">                                yPixelEnd - yPixelStart));</div><div class="line">    samples-&gt;imageX = Lerp(u, xPixelStart, xPixelStart + lerpDelta);</div><div class="line">    samples-&gt;imageY = Lerp(v, yPixelStart, yPixelStart + lerpDelta);</div><div class="line">    ++currentSample;</div><div class="line">    <span class="keyword">if</span> (samples-&gt;imageX &gt;= xPixelEnd || samples-&gt;imageY &gt;= yPixelEnd)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">goto</span> retry;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>之后根据图像范围进行剪裁。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">&lt;Generate lens, time, and integrator samples <span class="keyword">for</span> HaltonSampler&gt; ≡ <span class="number">364</span></div><div class="line">    samples-&gt;lensU = (<span class="keyword">float</span>)RadicalInverse(currentSample, <span class="number">5</span>);</div><div class="line">    samples-&gt;lensV = (<span class="keyword">float</span>)RadicalInverse(currentSample, <span class="number">7</span>);</div><div class="line">    samples-&gt;time = Lerp((<span class="keyword">float</span>)RadicalInverse(currentSample, <span class="number">11</span>),</div><div class="line">                         shutterOpen, shutterClose);</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; samples-&gt;n1D.size(); ++i)</div><div class="line">    &#123;</div><div class="line">        LatinHypercube(samples-&gt;oneD[i], samples-&gt;n1D[i], <span class="number">1</span>, rng);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; samples-&gt;n2D.size(); ++i)</div><div class="line">    &#123;</div><div class="line">        LatinHypercube(samples-&gt;twoD[i], samples-&gt;n2D[i], <span class="number">2</span>, rng);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p><strong>随机Halton采样</strong><br>Hammersley和Halton的问题在于，其一，随着b的增长，采样的分布会愈发的规律；其二，这些序列不适合并行渲染：如果多个线程从Hammersley和Halton序列中独立的生成采样，那么将得到完全相同的采样集，而所有线程在一个序列中同步生成采样点的开销是无法接受的。<br>替代方式是使用随机Halton序列，序列的实例之间相互独立。实现方式是在计算根基反转时为数字使用置换表。<br>$$\Psi_b(n)=0.p(d_1)p(d_2)\dots p(d_m)$$<br>其中，p是数字(0,1,…,b-1)的随机置换。注意，相同的置换用于每个数字，且相同的置换用于生成每个采样点n。函数GeneratePermutation()用于生成基于b的置换；PermutedRadicalInverse()修改自RadicalInverse()，为每个数字添加置换。<br>PermutedHalton是随机Halton采样的实用类。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;Monte Carlo Utility Declarations&gt; +≡</div><div class="line">    <span class="keyword">class</span> PermutedHalton</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;PermutedHalton Public Methods <span class="number">368</span>&gt;</div><div class="line">    <span class="keyword">private</span>:</div><div class="line">        &lt;PermutedHalton Private Data <span class="number">368</span>&gt;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<p>其构造函数需要生成采样点的维度d，预提供的质数数组primes。每个维度都需要置换表的大小bi，对此要统计并求和。为所有的置换表申请一块足够大的内存，b[0]中含有第一维的置换表，b[1]以此类推。做好上述工作后，PermutedHalton::Sample()生成序列的第n个采样，将值dims存储在out数组中。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;PermutedHalton Public Methods&gt; ≡ <span class="number">367</span></div><div class="line">    <span class="function"><span class="keyword">void</span> <span class="title">Sample</span><span class="params">(<span class="keyword">uint32_t</span> n, <span class="keyword">float</span> *out)</span> <span class="keyword">const</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">uint32_t</span> *p = permute;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; dims; ++i)</div><div class="line">        &#123;</div><div class="line">            out[i] = PermutedRadicalInverse(n, b[i], p);</div><div class="line">            p += b[i];</div><div class="line">        &#125;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="7-4-3-0-2-序列"><a href="#7-4-3-0-2-序列" class="headerlink" title="7.4.3 (0,2)-序列"></a>7.4.3 (0,2)-序列</h3><p>二维低差异序列构造方式：在一个维上用van der Corput序列，而在另一个方向上用基于根基反转函数的Sobol’序列。所得低差异序列被称为(0,2)-序列。(0,2)-序列的分层方式相当广泛：例，(0,2)-序列的前16个采样满足上文提到的分层约束；也满足拉丁超立方体约束。<br>一般的，任何长度为$2^{l_1+l_2}$的(0,2)-序列满足这个分层约束（其中li为非零整数）。以2为基的二维基本区间(elementary intervals)集合定义如下。<br>$$E={[\frac{a1}{2^{l_1}},\frac{a_1+1}{2^{l_1}})\times [\frac{a2}{2^{l_2}},\frac{a_2+1}{2^{l_2}})}$$<br>        E = {  [a1/2l1,  (a1+1)/2l1)   x [a2/2l2,  (a2+1)/2l2) }<br>其中整数ai = 0, …, 2^li -1。序列中前$2^{l_1+l_2}$个任一采样都会落在一个基本区间内。进一步地，后续的$2^{l_1+l_2}$个采样也有同样的性质。<br>为了理解(0,2)-序列如何为积分器生成二维采样点，考虑一个2 x 2图像采样的像素，每个图像采样有4 x 4个积分器采样。(0,2)-序列的前2 x 2 x 4 x 4 = 2^6个值就其相应的基本区间集而言，彼此之间保持良好的分布。进一步地，前4 x 4个采样按其基本区间集也具有良好的分布，下一组4 x 4个采样也是如此，等等。所以，可以使用(0,2)-序列的前16个采样作为像素的第一个图像采样的积分器采样，下一组16个(0,2)-序列采样作为下一个图像采样的积分器采样，以此类推。最后结果是一组分布非常优良的采样点。<br>在应用(0,2)-序列之前先解决几个细节。首先，需要为每个图像采样生成多组2D采样值，并且想要在不同像素的周围生成不同的采样值，方法是是随机地扰乱(0,2)-序列，即对原序列中每个值以b为基的一串数字进行随机排列。<br>这个扰乱方法来自Kollig and Keller(2002)。该方法对单位正方形[0,1] x [0,1]不断地进行分割和打乱顺序。对于两维中的每一维，正方形一分为二，以50%的概率交换两半，以此递归，直到浮点数的精度不足以改变所计算的值为止。这个过程是精心设计的，以确保点集的低差异性得到保留。<br>两个过程简化操作：首先，需要扰乱的序列都是以2为基，所有的数字都是0或1，使用异或操作；其二，在第l层的递归式扰乱中，对于$2^{l-1}$个子区间对(pairs of subintervals)来说，对每一个子区间对要么都交换，要么都不交换。以上，扰乱过程就可以编码为一组uint32_t的比特值，并且和原数字串进行XOR。<br>函数Sample02()用给定的扰乱值生成一个扰乱后的(0,2)-序列中的采样。这个序列是有两个一维低差异序列构成的(0,2)-序列。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Sampling Inline Functions&gt; ≡</div><div class="line">    <span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">Sample02</span><span class="params">(<span class="keyword">uint32_t</span> n, <span class="keyword">const</span> <span class="keyword">uint32_t</span> scramble[<span class="number">2</span>],</span></span></div><div class="line">                         <span class="keyword">float</span> sample[<span class="number">2</span>])</div><div class="line">    &#123;</div><div class="line">        sample[<span class="number">0</span>] = VanDerCorput(n, scramble[<span class="number">0</span>]);</div><div class="line">        sample[<span class="number">1</span>] = Sobol2(n, scramble[<span class="number">1</span>]);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>这里要求van der Corput和Sobol低差异序列都以2为基。这两个序列都使用一个u_int值scramble，该值是对一个随机排列的编码，在进行随机排列的同时计算第n个序列的值。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Sampling Inline Functions&gt; +≡</div><div class="line">    <span class="function"><span class="keyword">inline</span> <span class="keyword">float</span> <span class="title">VanDerCorput</span><span class="params">(<span class="keyword">uint32_t</span> n, <span class="keyword">uint32_t</span> scramble)</span></span></div><div class="line">    &#123;</div><div class="line">        &lt;Reverse bits of n <span class="number">372</span>&gt;</div><div class="line">        n ^= scramble;</div><div class="line">        <span class="keyword">return</span> ((n&gt;&gt;<span class="number">8</span>) &amp; <span class="number">0xffffff</span>) / <span class="keyword">float</span>(<span class="number">1</span> &lt;&lt; <span class="number">24</span>);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>32位的比特量可以通过位运算完成快速反转，如下所示。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">&lt;Reverse bits of n&gt; ≡ <span class="number">372</span></div><div class="line">    n = (n &lt;&lt; <span class="number">16</span>) | (n &gt;&gt; <span class="number">16</span>);</div><div class="line">    n = ((n &amp; <span class="number">0x00ff00ff</span>) &lt;&lt; <span class="number">8</span>) | ((n &amp; <span class="number">0xff00ff00</span>) &gt;&gt; <span class="number">8</span>);</div><div class="line">    n = ((n &amp; <span class="number">0x0f0f0f0f</span>) &lt;&lt; <span class="number">4</span>) | ((n &amp; <span class="number">0xf0f0f0f0</span>) &gt;&gt; <span class="number">4</span>);</div><div class="line">    n = ((n &amp; <span class="number">0x33333333</span>) &lt;&lt; <span class="number">2</span>) | ((n &amp; <span class="number">0xcccccccc</span>) &gt;&gt; <span class="number">2</span>);</div><div class="line">    n = ((n &amp; <span class="number">0x55555555</span>) &lt;&lt; <span class="number">1</span>) | ((n &amp; <span class="number">0xaaaaaaaa</span>) &gt;&gt; <span class="number">1</span>);</div><div class="line"></div><div class="line">&lt;Sampling Inline Functions&gt; +≡</div><div class="line">    <span class="function"><span class="keyword">inline</span> <span class="keyword">float</span> <span class="title">Sobol2</span><span class="params">(<span class="keyword">uint32_t</span> n, <span class="keyword">uint32_t</span> scramble)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">uint32_t</span> v = <span class="number">1</span> &lt;&lt; <span class="number">31</span>; n != <span class="number">0</span>; n &gt;&gt;= <span class="number">1</span>, v ^= v &gt;&gt; <span class="number">1</span>)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">if</span> (n &amp; <span class="number">0x1</span>)</div><div class="line">            &#123;</div><div class="line">                scramble ^= v;</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">return</span> ((scramble&gt;&gt;<span class="number">8</span>) &amp; <span class="number">0xffffff</span>) / <span class="keyword">float</span>(<span class="number">1</span> &lt;&lt; <span class="number">24</span>);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h3 id="7-4-4-低差异采样器"><a href="#7-4-4-低差异采样器" class="headerlink" title="7.4.4 低差异采样器"></a>7.4.4 低差异采样器</h3><p>LDSampler是一个基于(0,2)-序列的低差异模式采样器，每个像素生成2的某次幂个采样。镜头上的位置采样和二维积分器的采样都用被扰动的(0,2)-序列生成，一维的时间采样和积分器采样都是被扰动的van der Corput序列生成。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;LDSampler Declarations&gt; ≡</div><div class="line">    <span class="keyword">class</span> LDSampler : <span class="keyword">public</span> Sampler</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;LDSampler Public Methods <span class="number">374</span>&gt;</div><div class="line">    <span class="keyword">private</span>:</div><div class="line">        &lt;LDSampler Private Data <span class="number">374</span>&gt;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<p>如果必要，构造函数把给定的采样数提高到2的幂，以提高在(0,1]上分布的质量。同分层采样器，<br>LDSampler同样在采样生成过程为采样预先分配临时内存，所需内存的计算被独立到公用的工具函数中。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">&lt;LDSampler Method Definitions&gt; ≡</div><div class="line">    LDSampler::LDSampler(<span class="keyword">int</span> xstart, <span class="keyword">int</span> xend, <span class="keyword">int</span> ystart, <span class="keyword">int</span> yend, <span class="keyword">int</span> ps,</div><div class="line">                         <span class="keyword">float</span> sopen, <span class="keyword">float</span> sclose)</div><div class="line">        : Sampler(xstart, xend, ystart, yend, RoundUpPow2(ps), sopen, sclose)</div><div class="line">    &#123;</div><div class="line">        xPos = xPixelStart;</div><div class="line">        yPos = yPixelStart;</div><div class="line">        <span class="keyword">if</span> (!IsPowerOf2(ps)) </div><div class="line">        &#123;</div><div class="line">            Warning(<span class="string">"Pixel samples being rounded up to power of 2"</span>);</div><div class="line">            nPixelSamples = RoundUpPow2(ps);</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">else</span></div><div class="line">        &#123;</div><div class="line">            nPixelSamples = ps;</div><div class="line">        &#125;</div><div class="line">        sampleBuf = <span class="literal">NULL</span>;</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">&lt;LDSampler Private Data&gt; ≡ <span class="number">373</span></div><div class="line">    <span class="keyword">int</span> xPos, yPos, nPixelSamples;</div><div class="line">    <span class="keyword">float</span> *sampleBuf;</div></pre></td></tr></table></figure></p>
+<p>正如前面所提，低差异序列的大小必须是2的某次幂。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;LDSampler Public Methods&gt; +≡ <span class="number">373</span></div><div class="line">    <span class="function"><span class="keyword">int</span> <span class="title">RoundSize</span><span class="params">(<span class="keyword">int</span> size)</span> <span class="keyword">const</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> RoundUpPow2(size);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>xPos, yPos和samplePos变量的用途同StratifiedSampler中相应的成员变量，在采样区从左至右从上至下的扫描像素，通过调用GetMoreSamples()产生像素所需的全部采样，LDPixelSample()用当前像素的采样值填充samples数组。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">&lt;LDSampler Method Definitions&gt; +≡</div><div class="line">    <span class="keyword">int</span> LDSampler::GetMoreSamples(Sample *samples, RNG &amp;rng)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">if</span> (yPos == yPixelEnd)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">if</span> (sampleBuf == <span class="literal">NULL</span>)</div><div class="line">        &#123;</div><div class="line">            sampleBuf = <span class="keyword">new</span> <span class="keyword">float</span>[LDPixelSampleFloatsNeeded(samples,</div><div class="line">                                  nPixelSamples)];</div><div class="line">        &#125;</div><div class="line">        LDPixelSample(xPos, yPos, shutterOpen, shutterClose,</div><div class="line">                      nPixelSamples, samples, sampleBuf, rng);</div><div class="line">        <span class="keyword">if</span> (++xPos == xPixelEnd)</div><div class="line">        &#123;</div><div class="line">            xPos = xPixelStart;</div><div class="line">            ++yPos;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">return</span> nPixelSamples;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>LDPixelSample()使用临时缓存buf，这个缓存必须大到足矣容纳一个像素的所有图像、镜头、时间、积分器采样。这个计算由LDPixelSampleFloatsNeeded()完成，需要给定一个样本和像素采样率。它计算一个像素采样所需的全部floats，返回一个像素所有采样所需的浮点值。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">&lt;Sampling Function Definitions&gt; +≡</div><div class="line">    <span class="function"><span class="keyword">int</span> <span class="title">LDPixelSampleFloatsNeeded</span><span class="params">(<span class="keyword">const</span> Sample *sample, <span class="keyword">int</span> nPixelSamples)</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">int</span> n = <span class="number">5</span>; <span class="comment">// 2 lens + 2 pixel + time</span></div><div class="line">        <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; sample-&gt;n1D.size(); ++i)</div><div class="line">        &#123;</div><div class="line">            n += sample-&gt;n1D[i];</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; sample-&gt;n2D.size(); ++i)</div><div class="line">        &#123;</div><div class="line">            n += <span class="number">2</span> * sample-&gt;n2D[i];</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">return</span> nPixelSamples * n;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>给定足够大的线性临时缓存空间buf后，LDPixelSample()首先为缓存中各种类型采样计算指针。在缓存中生成采样后，将采样从floats数组拷贝到sample数组并返回。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;Sampling Function Definitions&gt; +≡</div><div class="line">    <span class="function"><span class="keyword">void</span> <span class="title">LDPixelSample</span><span class="params">(<span class="keyword">int</span> xPos, <span class="keyword">int</span> yPos, <span class="keyword">float</span> shutterOpen,</span></span></div><div class="line">        <span class="keyword">float</span> shutterClose, <span class="keyword">int</span> nPixelSamples, Sample *samples,</div><div class="line">        <span class="keyword">float</span> *buf, RNG &amp;rng)</div><div class="line">    &#123;</div><div class="line">        &lt;Prepare temporary <span class="built_in">array</span> pointers <span class="keyword">for</span> low-discrepancy camera samples <span class="number">375</span>&gt;</div><div class="line">        &lt;Prepare temporary <span class="built_in">array</span> pointers <span class="keyword">for</span> low-discrepancy integrator samples <span class="number">375</span>&gt;</div><div class="line">        &lt;Generate low-discrepancy pixel samples <span class="number">376</span>&gt;</div><div class="line">        &lt;Initialize samples with computed sample values <span class="number">376</span>&gt;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>图像、镜头、时间采样的指针从临时缓存buf中分离。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;Prepare temporary <span class="built_in">array</span> pointers <span class="keyword">for</span> low-discrepancy camera samples&gt; ≡ <span class="number">375</span></div><div class="line">    <span class="keyword">float</span> *imageSamples = buf; buf += <span class="number">2</span> * nPixelSamples;</div><div class="line">    <span class="keyword">float</span> *lensSamples = buf; buf += <span class="number">2</span> * nPixelSamples;</div><div class="line">    <span class="keyword">float</span> *timeSamples = buf; buf += nPixelSamples;</div></pre></td></tr></table></figure></p>
+<p>下一步，建立oneDSamples和twoDSamples数组用于标记各自采样值在临时缓存中的入口位置。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">&lt;Prepare temporary <span class="built_in">array</span> pointers <span class="keyword">for</span> low-discrepancy integrator samples&gt; ≡ <span class="number">375</span></div><div class="line">    <span class="keyword">uint32_t</span> count1D = samples[<span class="number">0</span>].n1D.size();</div><div class="line">    <span class="keyword">uint32_t</span> count2D = samples[<span class="number">0</span>].n2D.size();</div><div class="line">    <span class="keyword">const</span> <span class="keyword">uint32_t</span> *n1D = count1D &gt; <span class="number">0</span> ? &amp;samples[<span class="number">0</span>].n1D[<span class="number">0</span>] : <span class="literal">NULL</span>;</div><div class="line">    <span class="keyword">const</span> <span class="keyword">uint32_t</span> *n2D = count2D &gt; <span class="number">0</span> ? &amp;samples[<span class="number">0</span>].n2D[<span class="number">0</span>] : <span class="literal">NULL</span>;</div><div class="line">    <span class="keyword">float</span> **oneDSamples = ALLOCA(<span class="keyword">float</span> *, count1D);</div><div class="line">    <span class="keyword">float</span> **twoDSamples = ALLOCA(<span class="keyword">float</span> *, count2D);</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; count1D; ++i)</div><div class="line">    &#123;</div><div class="line">        oneDSamples[i] = buf;</div><div class="line">        buf += n1D[i] * nPixelSamples;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; count2D; ++i) </div><div class="line">    &#123;</div><div class="line">        twoDSamples[i] = buf;</div><div class="line">        buf += <span class="number">2</span> * n2D[i] * nPixelSamples;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>现在计算采样值。函数LDShuffleScrambled*D()用于计算一维和二维被扰乱的低差异采样模式。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">&lt;Generate low-discrepancy pixel samples&gt; ≡ <span class="number">375</span></div><div class="line">    LDShuffleScrambled2D(<span class="number">1</span>, nPixelSamples, imageSamples, rng);</div><div class="line">    LDShuffleScrambled2D(<span class="number">1</span>, nPixelSamples, lensSamples, rng);</div><div class="line">    LDShuffleScrambled1D(<span class="number">1</span>, nPixelSamples, timeSamples, rng);</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; count1D; ++i)</div><div class="line">    &#123;</div><div class="line">        LDShuffleScrambled1D(n1D[i], nPixelSamples, oneDSamples[i], rng);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; count2D; ++i)</div><div class="line">    &#123;</div><div class="line">        LDShuffleScrambled2D(n2D[i], nPixelSamples, twoDSamples[i], rng);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>最后，填充samples数组。对于图像和时间采样，其值被映射到相应的范围，其他采样类型可被直接拷贝。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;Initialize samples with computed sample values&gt; ≡ <span class="number">375</span></div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nPixelSamples; ++i)</div><div class="line">    &#123;</div><div class="line">        samples[i].imageX = xPos + imageSamples[<span class="number">2</span>*i];</div><div class="line">        samples[i].imageY = yPos + imageSamples[<span class="number">2</span>*i+<span class="number">1</span>];</div><div class="line">        samples[i].time = Lerp(timeSamples[i], shutterOpen, shutterClose);</div><div class="line">        samples[i].lensU = lensSamples[<span class="number">2</span>*i];</div><div class="line">        samples[i].lensV = lensSamples[<span class="number">2</span>*i+<span class="number">1</span>];</div><div class="line">        &lt;Copy integrator samples into samples[i] <span class="number">376</span>&gt;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>对于积分器采样来说，例，oneDSamples的第j个元素，指向数组nPixelSamples * n1D[j]的开始，其中第一个n1D[j]输入第一个像素采样，下一个n1D[j]属于下一个像素采样，以此类推。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">&lt;Copy integrator samples into samples[i]&gt; ≡ <span class="number">376</span></div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> j = <span class="number">0</span>; j &lt; count1D; ++j)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">int</span> startSamp = n1D[j] * i;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">uint32_t</span> k = <span class="number">0</span>; k &lt; n1D[j]; ++k)</div><div class="line">        &#123;</div><div class="line">            samples[i].oneD[j][k] = oneDSamples[j][startSamp+k];</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> j = <span class="number">0</span>; j &lt; count2D; ++j)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">int</span> startSamp = <span class="number">2</span> * n2D[j] * i;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">uint32_t</span> k = <span class="number">0</span>; k &lt; <span class="number">2</span>*n2D[j]; ++k)</div><div class="line">        &#123;</div><div class="line">            samples[i].twoD[j][k] = twoDSamples[j][startSamp+k];</div><div class="line">        &#125;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>在实际中使用(0,2)-序列时，需要注意一个细节：积分器所使用的采样可能来自不止一个采样模式。例，它可能使用一个来自一维模式的采样点去选择场景中的某一光源，之后使用一个二维模式的采样去选择面光源上某点。即使这两个模式使用不同的随机扰乱值，但二者之间可能仍存在相关性，如一维模式的第i个元素和二维模式的第i个元素相互关联。在前面区域照明的例子中，由于这种关联，采样点在每个光源的分布可能不会覆盖整个光，导致奇怪的渲染问题。<br>解决方法是在各种模式生成之后，对其进行独立的洗牌。例，LDShuffleScrambled1D()首先生成一个扰乱的一维低差异采样模式，对所有的图像样本像素进行了分布良好的采样，之后，它通过两种方式对这些样本进行洗牌。考录这样一种假设，一个像素有8个图像采样，每个图像采样都有4个1D的积分器采样（总共32个积分器采样），那么，首先，随机打乱8组中每组的4个采样顺序，之后将每组中的4个采样视为一个整体块，打乱8个采样块的顺序。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div></pre></td><td class="code"><pre><div class="line">&lt;Sampling Inline Functions&gt; +≡</div><div class="line">    <span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">LDShuffleScrambled1D</span><span class="params">(<span class="keyword">int</span> nSamples, <span class="keyword">int</span> nPixel,</span></span></div><div class="line">                                     <span class="keyword">float</span> *samples, RNG &amp;rng)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">uint32_t</span> scramble = rng.RandomUInt();</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nSamples * nPixel; ++i)</div><div class="line">        &#123;</div><div class="line">            samples[i] = VanDerCorput(i, scramble);</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nPixel; ++i)</div><div class="line">        &#123;</div><div class="line">            Shuffle(samples + i * nSamples, nSamples, <span class="number">1</span>, rng);</div><div class="line">        &#125;</div><div class="line">        Shuffle(samples, nPixel, nSamples, rng);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&lt;Sampling Inline Functions&gt; +≡</div><div class="line">    <span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">LDShuffleScrambled2D</span><span class="params">(<span class="keyword">int</span> nSamples, <span class="keyword">int</span> nPixel,</span></span></div><div class="line">                                     <span class="keyword">float</span> *samples, RNG &amp;rng)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">uint32_t</span> scramble[<span class="number">2</span>] = &#123; rng.RandomUInt(), rng.RandomUInt() &#125;;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nSamples * nPixel; ++i)</div><div class="line">        &#123;</div><div class="line">            Sample02(i, scramble, &amp;samples[<span class="number">2</span>*i]);</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; nPixel; ++i)</div><div class="line">        &#123;</div><div class="line">            Shuffle(samples + <span class="number">2</span> * i * nSamples, nSamples, <span class="number">2</span>, rng);</div><div class="line">        &#125;</div><div class="line">        Shuffle(samples, nPixel, <span class="number">2</span> * nSamples, rng);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>GetMoreSamples()实现以上后，返回的最大采样数就是包括每个像素的样本总数。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">&lt;LDSampler Public Methods&gt; +≡ <span class="number">373</span></div><div class="line">    <span class="function"><span class="keyword">int</span> <span class="title">MaximumSampleCount</span><span class="params">()</span> </span>&#123; <span class="keyword">return</span> nPixelSamples; &#125;</div></pre></td></tr></table></figure></p>
+<h2 id="7-5-最佳候选者采样模式-P407"><a href="#7-5-最佳候选者采样模式-P407" class="headerlink" title="7.5 最佳候选者采样模式 P407"></a>7.5 最佳候选者采样模式 P407</h2><p>StratifiedSampler和LDSampler共性的缺点在于，尽管它们在单个像素周围可生成的良好的采样模式，但是没有任何机制保证相邻像素之间图像采样的分布质量。如，要避免相邻像素的采样点过于靠近共用边。泊松圆盘模式(Poisson disk pattern)用来生成具有良好间隔的采样分布，常用掷飞镖(dart throwing)的方法来生成：一个程序随机低生成采样，若这个采样和之前的采样距离低过阈值，舍弃之。这个算法异常耗时。<br>一个更可行的方法是最佳候选者(best-candidate)算法。每计算一个新采样时，生成大量的随机候选者，所有这些候选者和之前生成的采样比较，只有距离和它们最远的一个候选者得到保留。这个算法并不保证泊松圆盘的性质，但最后的采样点通常间隔良好。它优点在于，其一，模式中任前n个点都分布良好；其二，对采样数目已知的情况更友好。<br>本节介绍最佳候选者算法实现的采样器，该采样器在额外维上的采样分布良好。这种算法计算采样位置很耗时，因此在预处理中计算这个模式的采样位置，然后存放到表里备用。这里并不是计算一个可以覆盖足够大图像的采样模式，而是计算一个可在整个图像平面上平铺(tiling)可重用的模式。这要求该模式应该有环面拓扑性质(toroidal topology)——当计算两个采样的距离时，必须将正方形采样区域看做是一个被卷曲的环面。计算该模式的代码收录于tools/samplepat.cpp，结果被存储在samplers/bestcandidate.out。<br>BestCandidateSampler是使用最佳候选者采样表的采样器。如果每个像素平均有pixelSamples个采样，那么单个采样表的拷贝可以在x或y方向上覆盖SQRT_SAMPLE_TABLE_SIZE/sqrt(pixelSamples)个像素。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;BestCandidate Sampling Constants&gt; =</div><div class="line">    #define SQRT_SAMPLE_TABLE_SIZE <span class="number">64</span></div><div class="line">    #define SAMPLE_TABLE_SIZE (SQRT_SAMPLE_TABLE_SIZE * \</div><div class="line">                               SQRT_SAMPLE_TABLE_SIZE)</div></pre></td></tr></table></figure></p>
+<p>可以假设整个2D图像空间被重复的采样表实例覆盖，设左上角的实例位于像素位置(0,0)，那么给定实例框的宽和高，所有实例坐标已知。那么从连续像素位置(x,y)到它所属采样表的2D索引(i,j)的映射已知：(i,j)=(⌊x/tableWidth⌋ ,⌊y/tableWidth⌋)。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;BestCandidateSampler Declarations&gt; ≡</div><div class="line">    <span class="keyword">class</span> BestCandidateSampler : <span class="keyword">public</span> Sampler</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;BestCandidateSampler Public Methods <span class="number">381</span>&gt;</div><div class="line">    <span class="keyword">private</span>:</div><div class="line">        &lt;BestCandidateSampler Private Data <span class="number">381</span>&gt;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<p>其中，成员函数tableWidth记录了采样表跨越的像素个数。之后构造函数计算的采样表范围必须考虑到取样器像素范围内所有的采样点——因为采样点在采样表内没任何空间结构，需要逐个检查以确认它是否在图像块内。这个范围储存在xTileStart、xTileEnd、yTileStart和yTileEnd。xTile和yTile存有当正在使用的采样表实例的整数索引，tableOffset存有当前在采样表中的偏移量，当该值抵达表尾时，采样器前进到图像的下一个区域。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">&lt;BestCandidateSampler Public Methods&gt; ≡ <span class="number">381</span></div><div class="line">    BestCandidateSampler(<span class="keyword">int</span> xstart, <span class="keyword">int</span> xend, <span class="keyword">int</span> ystart, <span class="keyword">int</span> yend,</div><div class="line">                         <span class="keyword">int</span> nPixelSamples, <span class="keyword">float</span> sopen, <span class="keyword">float</span> sclose)</div><div class="line">        : Sampler(xstart, xend, ystart, yend, nPixelSamples, sopen, sclose)</div><div class="line">    &#123;</div><div class="line">        tableWidth = (<span class="keyword">float</span>)SQRT_SAMPLE_TABLE_SIZE /</div><div class="line">                     (<span class="keyword">float</span>)sqrtf(nPixelSamples);</div><div class="line">        xTileStart = Floor2Int(xstart / tableWidth);</div><div class="line">        xTileEnd = Floor2Int(xend / tableWidth);</div><div class="line">        yTileStart = Floor2Int(ystart / tableWidth);</div><div class="line">        yTileEnd = Floor2Int(yend / tableWidth);</div><div class="line">        xTile = xTileStart;</div><div class="line">        yTile = yTileStart;</div><div class="line">        tableOffset = <span class="number">0</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&lt;BestCandidateSampler Private Data&gt; ≡ <span class="number">381</span></div><div class="line">    <span class="keyword">float</span> tableWidth;</div><div class="line">    <span class="keyword">int</span> tableOffset;</div><div class="line">    <span class="keyword">int</span> xTileStart, xTileEnd, yTileStart, yTileEnd;</div><div class="line">    <span class="keyword">int</span> xTile, yTile;</div></pre></td></tr></table></figure>
+<p>现在涵盖预计算的采样数据。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;BestCandidateSampler Private Data&gt; +≡ <span class="number">381</span></div><div class="line">    <span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">float</span> sampleTable[SAMPLE_TABLE_SIZE][<span class="number">5</span>];</div><div class="line"></div><div class="line">&lt;BestCandidateSampler Method Definitions&gt; ≡</div><div class="line">    <span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"samplers/bestcandidate.out"</span></span></div></pre></td></tr></table></figure></p>
+<p>BestCandidateSampler::GetNextSample()的实现同其它采样器，不同在于它为处于采样器范围内的每个最佳候选人采样点返回一个采样样本。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">&lt;BestCandidateSampler Method Definitions&gt; +≡</div><div class="line">    <span class="keyword">int</span> BestCandidateSampler::GetMoreSamples(Sample *sample, RNG &amp;rng)</div><div class="line">    &#123;</div><div class="line">    again:</div><div class="line">        <span class="keyword">if</span> (tableOffset == SAMPLE_TABLE_SIZE)</div><div class="line">        &#123;</div><div class="line">            &lt;Advance to next best-candidate sample table position <span class="number">384</span>&gt;</div><div class="line">        &#125;</div><div class="line">        &lt;Compute raster sample from table <span class="number">385</span>&gt;</div><div class="line">        &lt;Check sample against crop window, <span class="keyword">goto</span> again <span class="keyword">if</span> outside <span class="number">385</span>&gt;</div><div class="line">        &lt;Compute integrator samples <span class="keyword">for</span> best-candidate sample <span class="number">385</span>&gt;</div><div class="line">        ++tableOffset;</div><div class="line">        <span class="keyword">return</span> <span class="number">1</span>;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>如果到达了采样表的尾部，采样器尝试移向下一个预计算的采样框，先x后y遍历整个框。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&lt;Advance to next best-candidate sample table position&gt; ≡ <span class="number">383</span></div><div class="line">    tableOffset = <span class="number">0</span>;</div><div class="line">    <span class="keyword">if</span> (++xTile &gt; xTileEnd)</div><div class="line">    &#123;</div><div class="line">        xTile = xTileStart;</div><div class="line">        <span class="keyword">if</span> (++yTile &gt; yTileEnd)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&lt;Update sample shifts <span class="number">384</span>&gt;</div></pre></td></tr></table></figure></p>
+<p>平铺式的采样模式有一个问题，图像平面上模式的边缘可能产生伪影，原因在于相同的时间和镜头位置的采样在平铺时重复出现导致的。不仅是因为相同采样的使用和重用（StratifiedSampler和LDSampler至少能为每个图像采样生成不同的时间和镜头值），还有每个采样块的左上角总是有相同的时间和镜头值等问题。<br>一个解决方案是，在每次重用模式时对采样值进行变换。在每个维上使用Cranley-Patterson轮转变换。<br>$$X’_i=(X_i+\xi_i)mod 1$$<br>其中，Xi是采样值，ξi是在0和1之间的随机值。因为采样模式计算的时间和镜头部分具有环面拓扑结构，所以最终所得到的模式是具有良好分布和无缝的，如.01和.99两点间距应是.02而不是.98。时间和镜头的随机偏移量ξi在每次重用采样模式时都要更新。<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;Update sample shifts&gt; ≡ 384</div><div class="line">    RNG tileRng(xTile + (yTile&lt;&lt;8));</div><div class="line">    for (int i = 0; i &lt; 3; ++i)</div><div class="line">    &#123;</div><div class="line">        sampleOffsets[i] = tileRng.RandomFloat();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&lt;BestCandidateSampler Private Data&gt; +≡ 381</div><div class="line">    float sampleOffsets[3];</div></pre></td></tr></table></figure></p>
+<p>从采样表的位置计算光栅空间采样位置需要索引计算和比例计算。对图像采样不使用Carnley-Patternson换位，因为这会使采样点在表重用边界附近的分布变差。保持图像采样分布良好比减少关联更重要。相机的其它维上使用换位技术，WRAP宏定义保证结果落在0到1之间。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;Compute raster sample from table&gt; ≡ <span class="number">383</span></div><div class="line">    <span class="meta">#<span class="meta-keyword">define</span> WRAP(x) ((x) &gt; 1 ? ((x)-1) : (x))</span></div><div class="line">    sample-&gt;imageX = (xTile + sampleTable[tableOffset][<span class="number">0</span>]) * tableWidth;</div><div class="line">    sample-&gt;imageY = (yTile + sampleTable[tableOffset][<span class="number">1</span>]) * tableWidth;</div><div class="line">    sample-&gt;time = Lerp(WRAP(sampleOffsets[<span class="number">0</span>] + sampleTable[tableOffset][<span class="number">2</span>]),</div><div class="line">                        shutterOpen, shutterClose);</div><div class="line">    sample-&gt;lensU = WRAP(sampleOffsets[<span class="number">1</span>] +</div><div class="line">                         sampleTable[tableOffset][<span class="number">3</span>]);</div><div class="line">    sample-&gt;lensV = WRAP(sampleOffsets[<span class="number">2</span>] +</div><div class="line">                         sampleTable[tableOffset][<span class="number">4</span>]);</div></pre></td></tr></table></figure></p>
+<p>一些生成的采样或许位于取样器的像素取样范围之外。取样器检查要这种情况，如果越界则生成新的采样点，<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Check sample against crop window, <span class="keyword">goto</span> again <span class="keyword">if</span> outside ≡ <span class="number">383</span></div><div class="line">    <span class="keyword">if</span> (sample-&gt;imageX &lt; xPixelStart || sample-&gt;imageX &gt;= xPixelEnd ||</div><div class="line">        sample-&gt;imageY &lt; yPixelStart || sample-&gt;imageY &gt;= yPixelEnd)</div><div class="line">    &#123;</div><div class="line">        ++tableOffset;</div><div class="line">        <span class="keyword">goto</span> again;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>如果采样点在采样器的像素范围内，采样器使用被扰乱的(0,2)-序列为积分器生成采样。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;Compute integrator samples <span class="keyword">for</span> best-candidate sample&gt; ≡ <span class="number">383</span></div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; sample-&gt;n1D.size(); ++i)</div><div class="line">    &#123;</div><div class="line">        LDShuffleScrambled1D(sample-&gt;n1D[i], <span class="number">1</span>, sample-&gt;oneD[i], rng);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">uint32_t</span> i = <span class="number">0</span>; i &lt; sample-&gt;n2D.size(); ++i)</div><div class="line">    &#123;</div><div class="line">        LDShuffleScrambled2D(sample-&gt;n2D[i], <span class="number">1</span>, sample-&gt;twoD[i], rng);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h2 id="7-6-自适应采样-P414"><a href="#7-6-自适应采样-P414" class="headerlink" title="7.6 自适应采样 P414"></a>7.6 自适应采样 P414</h2><p>AdaptiveSampler实现了一个简单的自适应采样算法，试图通过在图像局部添加额外的采样以得到更高质量的图像。回忆Samplers和主渲染循环SamplerRendererTask::Run()中的基本交互：</p>
+<ul>
+<li>渲染循环调用Sampler::GetMoreSamples()得到集中的采样</li>
+<li>SamplerRendererTask沿相应光线计算辐射值</li>
+<li>采样、辐射值、交点信息被传回Sampler::ReportResults()</li>
+<li>根据上步函数的返回值，SamplerRendererTask放弃这些数据集或是将其传入Film最为最终图像的一部分</li>
+</ul>
+<p>这个交互过程允许采样器检查一批采样点的结果并决定在适当时机添加更多的采样。这些值以多种形式传到ReportResults()中。自适应采样要确立一个何时添加采样的标准，而困难在于，采样器能获得的信息是有限的：通常，它可用的值是一堆顶点样本，对于图像函数在那些点处的行为并无信息。AdaptiveSampler实现在samplers/adaptive.h和samplers/adaptive.cpp，支持两种简单的细化标准：其一，基于检测是否有不同的形体被不同的采样相交，这表明一个可能的几何中断；其二，检测不同颜色的样本之间是否有过度的对比度。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;AdaptiveSampler Declarations&gt; ≡</div><div class="line">    <span class="keyword">class</span> AdaptiveSampler : <span class="keyword">public</span> Sampler</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;AdaptiveSampler Public Methods&gt;</div><div class="line">    <span class="keyword">private</span>:</div><div class="line">        AdaptiveSampler Private Methods&gt;</div><div class="line">        AdaptiveSampler Private Data <span class="number">386</span>&gt;</div><div class="line">&#125;;</div></pre></td></tr></table></figure></p>
+<p>成员函数如下，分别为记录当前被采样的像素，像素最大最小采样数，临时缓存，选择细化标准，以及当前像素是否需要拓展采样数。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;AdaptiveSampler Private Data&gt; ≡ <span class="number">386</span></div><div class="line">    <span class="keyword">int</span> xPos, yPos;</div><div class="line">    <span class="keyword">int</span> minSamples, maxSamples;</div><div class="line">    <span class="keyword">float</span> *sampleBuf;</div><div class="line">    <span class="keyword">enum</span> AdaptiveTest &#123; ADAPTIVE_COMPARE_SHAPE_ID,</div><div class="line">                        ADAPTIVE_CONTRAST_THRESHOLD &#125;;</div><div class="line">    AdaptiveTest method;</div><div class="line">    <span class="keyword">bool</span> supersamplePixel;</div></pre></td></tr></table></figure></p>
+<p>其中supersamplePixel很重要，它决定了GetMoreSamples()和ReportResults()之间的交互。</p>
+<ul>
+<li>初始，supersamplePixel为false，且minSamples的初值由当前像素的GetMoreSamples()决定。渲染循环评估这些采样点并传到GetMoreSamples()中。若表明需要进一步采样，ReportResults()置supersamplePixel为true并保证当前像素坐标不变，下次调用GetMoreSamples()为这个像素生成maxSamples数目的采样。当这些采样被提供给ReportResults()后，supersamplePixel复位为false并推进当前像素坐标。因此对于需要增加采样数的像素来说只会额外采样一次。</li>
+<li>如果进一步取样后不需要样品的初始设置，那么ReportResults()置supersamplePixel为false，然后像其他采样器一样推进当前像素坐标。<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line">&lt;AdaptiveSampler Method Definitions&gt; ≡</div><div class="line">    <span class="keyword">int</span> AdaptiveSampler::GetMoreSamples(Sample *samples, RNG &amp;rng)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">if</span> (!sampleBuf)</div><div class="line">        &#123;</div><div class="line">            sampleBuf = <span class="keyword">new</span> <span class="keyword">float</span>[LDPixelSampleFloatsNeeded(samples,</div><div class="line">                                  maxSamples)];</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">if</span> (supersamplePixel)</div><div class="line">        &#123;</div><div class="line">            LDPixelSample(xPos, yPos, shutterOpen, shutterClose, maxSamples,</div><div class="line">                          samples, sampleBuf, rng);</div><div class="line">            <span class="keyword">return</span> maxSamples;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">else</span></div><div class="line">        &#123;</div><div class="line">            <span class="keyword">if</span> (yPos == yPixelEnd)</div><div class="line">            &#123;</div><div class="line">                <span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">            &#125;</div><div class="line">            LDPixelSample(xPos, yPos, shutterOpen, shutterClose, minSamples,</div><div class="line">                          samples, sampleBuf, rng);</div><div class="line">            <span class="keyword">return</span> minSamples;</div><div class="line">        &#125;</div><div class="line">    &#125;</div></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>除了(xPos, yPos)和supersamplePixel中保持当前状态，ReportResults()大部分工作由函数needsSupersampling()完成。<br>上述，AdaptiveSampler支持两种标准，其选择由布尔值判断。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">&lt;AdaptiveSampler Method Definitions&gt; +≡</div><div class="line">    <span class="keyword">bool</span> AdaptiveSampler::needsSupersampling(Sample *samples,</div><div class="line">        <span class="keyword">const</span> RayDifferential *rays, <span class="keyword">const</span> Spectrum *Ls,</div><div class="line">        <span class="keyword">const</span> Intersection *isects, <span class="keyword">int</span> count)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">switch</span> (method)</div><div class="line">        &#123;</div><div class="line">        <span class="keyword">case</span> ADAPTIVE_COMPARE_SHAPE_ID:</div><div class="line">            &lt;See <span class="keyword">if</span> any shape ids differ within samples <span class="number">388</span>&gt;</div><div class="line">        <span class="keyword">case</span> ADAPTIVE_CONTRAST_THRESHOLD:</div><div class="line">            &lt;Compare contrast of sample differences to threshold <span class="number">389</span>&gt;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>一个简单的测试，是看对于相交的物体，是否存在形体id不同的情况。如果一些光交在不同的形体上，那么很可能在像素的范围内存在边界，那么更多的采样是必要的。这个测试效率较高，但在一些场合会失效，例，可能存在不同的形体id，但是不存在几何边缘的情况——两个同材质的共面三角形共享一条边。此外，一个复杂的形体，如一块参数化的补丁，当从相机方向看去时它可能会折叠自己，它自身含有边，需要更多的采样。由于硬阴影边界，这个评判标准也不能捕捉图像函数的不连续点，而这可能引起几何走样。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;See <span class="keyword">if</span> any shape ids differ within samples&gt; ≡ <span class="number">388</span></div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; count<span class="number">-1</span>; ++i)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">if</span> (isects[i].shapeId != isects[i+<span class="number">1</span>].shapeId ||</div><div class="line">            isects[i].primitiveId != isects[i+<span class="number">1</span>].primitiveId)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</div></pre></td></tr></table></figure></p>
+<p>另一评判标准，计算两采样点所携带的颜色对比度。如果对比度过大，那么像素需要额外的采样。所有采样点的平均亮度被存入Lavg，之后计算每个采样和均值的相对差值求对比度。若差值高于某阈值，额外采样。同样的，这个测试也不总是成功。一个特别的问题源于和纹理的交互：为避免走样，滤波器过滤了高频的值（以ImageTexture为例，为了消除高频，图像映射的过滤基于它们被采样的速率）。对于一个复杂的纹理函数，对比度特征可能表明这需要更多的采样，但实际上底层图像函数并没有走样。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">&lt;Compare contrast of sample differences to threshold&gt; ≡ <span class="number">388</span></div><div class="line">    <span class="keyword">float</span> Lavg = <span class="number">0.f</span>;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; count; ++i)</div><div class="line">    &#123;</div><div class="line">        Lavg += Ls[i].y();</div><div class="line">    &#125;</div><div class="line">    Lavg /= count;</div><div class="line">    <span class="keyword">const</span> <span class="keyword">float</span> maxContrast = <span class="number">0.5f</span>;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; count; ++i)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">if</span> (fabsf(Ls[i].y() - Lavg) / Lavg &gt; maxContrast)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</div></pre></td></tr></table></figure></p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/CG/" rel="tag">#CG</a>
+          
+            <a href="/tags/PBRT/" rel="tag">#PBRT</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/09/09/pbrt-ch7-1/" rel="next" title="PBRT 章节7 采样与重构 1/3">
+                <i class="fa fa-chevron-left"></i> PBRT 章节7 采样与重构 1/3
+              </a>
+            
+          </div>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel ">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.png"
+               alt="Sulpures" />
+          <p class="site-author-name" itemprop="name">Sulpures</p>
+          <p class="site-description motion-element" itemprop="description">「今せぇいっぱい生きよう」</p>
+        </div>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">9</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">1</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+            
+              
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#7-3-分层采样-P375"><span class="nav-number">1.</span> <span class="nav-text">7.3 分层采样 P375</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-4-低差异采样-P388"><span class="nav-number">2.</span> <span class="nav-text">7.4 低差异采样 P388</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#7-4-1-差异的定义"><span class="nav-number">2.1.</span> <span class="nav-text">7.4.1 差异的定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-4-2-哈默斯利和霍尔顿序列"><span class="nav-number">2.2.</span> <span class="nav-text">7.4.2 哈默斯利和霍尔顿序列</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-4-3-0-2-序列"><span class="nav-number">2.3.</span> <span class="nav-text">7.4.3 (0,2)-序列</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-4-4-低差异采样器"><span class="nav-number">2.4.</span> <span class="nav-text">7.4.4 低差异采样器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-5-最佳候选者采样模式-P407"><span class="nav-number">3.</span> <span class="nav-text">7.5 最佳候选者采样模式 P407</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-6-自适应采样-P414"><span class="nav-number">4.</span> <span class="nav-text">7.6 自适应采样 P414</span></a></li></ol></div>
+            
+          </div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2016</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Sulpures</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/vendors/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.0.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.0.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.0.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.0.1"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+  
+  
+
+  
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+        processEscapes: true,
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+  </script>
+
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for (i=0; i < all.length; i += 1) {
+        all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+    });
+  </script>
+  <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+  
+
+  
+
+</body>
+</html>
