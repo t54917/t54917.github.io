@@ -1,0 +1,655 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/vendors/font-awesome/css/font-awesome.min.css?v=4.4.0" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.0.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="CG,PBRT," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.0.1" />
+
+
+
+
+
+
+<meta name="description" content="7.7 图像重构 P418给定采样方式后，下一步是将采样及其辐射亮度值转换为用于显示或存储的像素值。需要做三件微小的工作：
+
+通过图像采样集合重构得到连续的图像函数L~
+对L~做前置滤波以去除超过Nyquist极限的频率
+在像素位置上对L~进行采样，计算出最后的像素值因为只需在像素位置上对函数L~进行重采样，所以没必要构造出函数的显式表达，而是用一个滤波器将前两步合并。完美重构在实际应用中通常无法">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PBRT 章节7 采样与重构 3/3">
+<meta property="og:url" content="http://sulpures.me/2016/09/14/pbrt-ch7-3/index.html">
+<meta property="og:site_name" content="僕だけ居る">
+<meta property="og:description" content="7.7 图像重构 P418给定采样方式后，下一步是将采样及其辐射亮度值转换为用于显示或存储的像素值。需要做三件微小的工作：
+
+通过图像采样集合重构得到连续的图像函数L~
+对L~做前置滤波以去除超过Nyquist极限的频率
+在像素位置上对L~进行采样，计算出最后的像素值因为只需在像素位置上对函数L~进行重采样，所以没必要构造出函数的显式表达，而是用一个滤波器将前两步合并。完美重构在实际应用中通常无法">
+<meta property="og:updated_time" content="2016-09-14T12:23:40.733Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="PBRT 章节7 采样与重构 3/3">
+<meta name="twitter:description" content="7.7 图像重构 P418给定采样方式后，下一步是将采样及其辐射亮度值转换为用于显示或存储的像素值。需要做三件微小的工作：
+
+通过图像采样集合重构得到连续的图像函数L~
+对L~做前置滤波以去除超过Nyquist极限的频率
+在像素位置上对L~进行采样，计算出最后的像素值因为只需在像素位置上对函数L~进行重采样，所以没必要构造出函数的显式表达，而是用一个滤波器将前两步合并。完美重构在实际应用中通常无法">
+
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: 0,
+      author: '博主'
+    }
+  };
+</script>
+
+
+
+
+  <link rel="canonical" href="http://sulpures.me/2016/09/14/pbrt-ch7-3/"/>
+
+  <title> PBRT 章节7 采样与重构 3/3 | 僕だけ居る </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">僕だけ居る</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+  <p class="site-subtitle"></p>
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                PBRT 章节7 采样与重构 3/3
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            <span class="post-meta-item-icon">
+              <i class="fa fa-calendar-o"></i>
+            </span>
+            <span class="post-meta-item-text">发表于</span>
+            <time itemprop="dateCreated" datetime="2016-09-14T20:23:30+08:00" content="2016-09-14">
+              2016-09-14
+            </time>
+          </span>
+
+          
+            <span class="post-category" >
+              &nbsp; | &nbsp;
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                  <a href="/categories/Graphics/" itemprop="url" rel="index">
+                    <span itemprop="name">Graphics</span>
+                  </a>
+                </span>
+
+                
+                
+
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+
+          
+          
+
+          
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="7-7-图像重构-P418"><a href="#7-7-图像重构-P418" class="headerlink" title="7.7 图像重构 P418"></a>7.7 图像重构 P418</h2><p>给定采样方式后，下一步是将采样及其辐射亮度值转换为用于显示或存储的像素值。需要做三件微小的工作：</p>
+<ul>
+<li>通过图像采样集合重构得到连续的图像函数L~</li>
+<li>对L~做前置滤波以去除超过Nyquist极限的频率</li>
+<li>在像素位置上对L~进行采样，计算出最后的像素值<br>因为只需在像素位置上对函数L~进行重采样，所以没必要构造出函数的显式表达，而是用一个滤波器将前两步合并。<br>完美重构在实际应用中通常无法实现，且完美重构技术通常不会产生高质量的图像。为重构像素值，考虑对某像素附近的采样进行插值的问题。下述为计算像素的最终值I(x,y)的加权平均公式。<br>$$I(x,y)=\frac{\sum_i f(x-x_i,y-y_i)L(x_i,y_i)}{\sum_i f(x-x_i,y-y_i)}$$<br>其中L(xi,yi)是位于(xi,yi)的第i个采样的辐射亮度值，f是滤波函数。<br>这里的滤波器并不适合sinc：当函数存在高过Nyquist极限的频率(Gibbs现象)，理想的sinc滤波器易产生振铃现象(Ringing)，即图像的边缘附近出现模糊的拷贝。此外，sinc滤波器在有限距离之内不会衰减到0，因此对每个输出像素，所有图像采样会被滤波。<br>影响图像滤波器选择的另一个问题在于，重构滤波器可能对采样模式产生干扰。如LDSampler，在单个像素的面积上可以生成分布良好的低差异模式，但像素的采样之间不能保证分布良好。当使用盒滤波器时，这个采样模式工作良好，但当使用并非常数(constant)的滤波器且跨越多个像素时，效果很差。这很尴尬：作为重构滤波器，盒滤波器很不常用；但只有盒滤波器才适配LDSampler。<h3 id="7-7-1滤波函数"><a href="#7-7-1滤波函数" class="headerlink" title="7.7.1滤波函数"></a>7.7.1滤波函数</h3>PBRT实现的滤波器都来自抽象类Filter，收录于core/filter.h和core/filter.cpp，该类提供使用滤波函数f(x,y)的接口。类Film存有Filter指针，在把输出写入磁盘之前用该滤波器对结果滤波。<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Filter Declarations&gt; ≡</div><div class="line">    <span class="keyword">class</span> Filter</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        &lt;Filter Interface <span class="number">393</span>&gt;</div><div class="line">        &lt;Filter Public Data <span class="number">394</span>&gt;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>所有滤波器都定义一个宽度范围，超过范围的函数值为0，该范围在x、y方向上可有不同值。构造函数存有把这些值及其倒数，滤波器在每个方向上支持的范围是相应宽度的两倍。Filter唯一要实现的函数是Evaluate()，它的变量x，y给出了相对于滤波器中心的采样点位置，返回指定样本的权重值。<br><strong>盒滤波器</strong><br>盒滤波器是图形学中最常见的滤波器，但它的效果很糟糕。盒滤波器对图像中矩形区域内所有采样都赋予相同权值，它可能使重构值遗漏高频采样数据，引起后置走样(postaliasing)。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;Box Filter Declarations&gt; ≡</div><div class="line">    <span class="keyword">class</span> BoxFilter : <span class="keyword">public</span> Filter</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        BoxFilter(<span class="keyword">float</span> xw, <span class="keyword">float</span> yw) : Filter(xw, yw) &#123; &#125;</div><div class="line">        <span class="function"><span class="keyword">float</span> <span class="title">Evaluate</span><span class="params">(<span class="keyword">float</span> x, <span class="keyword">float</span> y)</span> <span class="keyword">const</span></span>;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<p>(x,y)超出滤波器范围时不会调用Evaluate()。边界判定是多余的。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;Box Filter Method Definitions&gt; ≡</div><div class="line">    <span class="keyword">float</span> BoxFilter::Evaluate(<span class="keyword">float</span> x, <span class="keyword">float</span> y) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> <span class="number">1.</span>;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p><strong>三角滤波器</strong><br>三角滤波器在滤波器中心的采样权值为1，其它采样的权值沿中心两侧线性递减。它的实现只是计算基于在x和y方向上滤波器宽度的线性函数。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;Triangle Filter Method Definitions&gt; ≡</div><div class="line">    <span class="keyword">float</span> TriangleFilter::Evaluate(<span class="keyword">float</span> x, <span class="keyword">float</span> y) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> max(<span class="number">0.f</span>, xWidth - fabsf(x)) *</div><div class="line">               max(<span class="number">0.f</span>, yWidth - fabsf(y));</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p><strong>Gaussian滤波器</strong><br>高斯滤波器使用一个高斯凸起(Gaussian bump)，其位于像素中心并成放射状对称分布。跟其它滤波器相比使用高斯滤波器的图像会产生轻微模糊，这种模糊会掩盖走样。宽度为w的一维高斯滤波函数如下。<br>$$f(x)=e^{-\alpha x^2}-e^{-\alpha w^2}$$<br>其中α用于控制滤波器的衰减速率，α值越小，衰减越慢，图像越模糊。为了保证效率，构造函数预计算每个方向上的常数项。2D高斯函数由两个1D高斯函数的积表示。因此其实现过程如下。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&lt;Gaussian Filter Method Definitions&gt; ≡</div><div class="line">    <span class="keyword">float</span> GaussianFilter::Evaluate(<span class="keyword">float</span> x, <span class="keyword">float</span> y) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> Gaussian(x, expX) * Gaussian(y, expY);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&lt;GaussianFilter Utility Functions&gt; ≡ <span class="number">397</span></div><div class="line">    <span class="function"><span class="keyword">float</span> <span class="title">Gaussian</span><span class="params">(<span class="keyword">float</span> d, <span class="keyword">float</span> expv)</span> <span class="keyword">const</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> max(<span class="number">0.f</span>, <span class="keyword">float</span>(expf(-alpha * d * d) - expv));</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p><strong>Mitchell滤波器</strong><br>Mitchell和Netravali开发了一套参数化的滤波器函数来系统的探讨这个问题，他们的滤波器在两种常见的人工缺陷——振铃现象和模糊现象之中做了很好的权衡。其滤波器函数图形有取负值的区域，以此改善边缘的尖锐性，减少了模糊性。但负值区域过大会引入振铃现象。最终像素值经过此滤波器可能为负，但这些负值最终要被转变为合法像素值。<br>Mitchell滤波器有两个参数B和C，两者可取任意值，但建议它们保持B+2C=1的关系。<br>同其它许多2D图像滤波器（高斯），Mitchell滤波器是x和y两方向上1D滤波器函数的积。而这个1D函数是定义在[-2,2]上的偶函数，其中[0,1]和[1,2]是两段由B和C控制的三次多项式，要保证函数在x=0, x=1和x=2处的C0和C1连续性。多项式如下。<br>$$f(x)=\frac{1}{6}<br>\begin{cases}<br>(12−9B−6C)|x|^3+(−18+12B+6C)|x|^2+(6−2B) &amp; |x|<1\\ 0="" (−b−6c)|x|^3+(6b+30c)|x|^2+(−12b−48c)|x|+(8b+24c)="" &="" 1\leq="" |x|<2\\="" otherwise.="" \end{cases}$$="" **窗口sinc滤波器**="" lanczossincfilter类实现基于sinc函数的滤波器。在实际中，sinc滤波器常乘shan一个随距离的增大而逐渐趋向于0的窗口函数，以限制滤波器函数的范围，减少振铃现象。另一参数τ用于控制sinc函数的周期。sinc函数和窗口函数相乘即为窗口sinc滤波函数。="" <figure="" class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">&lt;LanczosSincFilter Public Methods&gt; +≡ <span class="number">400</span></div><div class="line">    <span class="function"><span class="keyword">float</span> <span class="title">Sinc1D</span><span class="params">(<span class="keyword">float</span> x)</span> <span class="keyword">const</span></span></div><div class="line">    &#123;</div><div class="line">        x = fabsf(x);</div><div class="line">        <span class="keyword">if</span> (x &lt; <span class="number">1e-5</span>)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> <span class="number">1.f</span>;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">if</span> (x &gt; <span class="number">1.</span>)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> <span class="number">0.f</span>;</div><div class="line">        &#125;</div><div class="line">        x *= M_PI;</div><div class="line">        <span class="keyword">float</span> sinc = sinf(x * tau) / (x * tau);</div><div class="line">        <span class="keyword">float</span> lanczos = sinf(x) / x;</div><div class="line">        <span class="keyword">return</span> sinc * lanczos;</div><div class="line">&#125;</div></pre></td></tr></table></1\\></p>
+<h2 id="7-8-胶片和图象管线-431"><a href="#7-8-胶片和图象管线-431" class="headerlink" title="7.8 胶片和图象管线 431"></a>7.8 胶片和图象管线 431</h2><p>相机中的胶片类型直接影响入射光转换为图像颜色的方式。PBRT中Film类模拟相机中的感光设备。得到每条相机光线的辐射亮度后，Film类的实现确定采样对附近像素的贡献值并更新图像表示，程序退出主渲染循环时，Film将结果存盘。<br>本节的Film类使用像素重构方程计算最终的像素值并存盘，对于一个基于物理的渲染器，用浮点格式创建图像而非8位无符号整数，但之后必须把浮点像素值映射到显示器上的离散值。</p>
+<h3 id="7-8-1-Film接口"><a href="#7-8-1-Film接口" class="headerlink" title="7.8.1 Film接口"></a>7.8.1 Film接口</h3><p>Film基类定义了Film实现的抽象接口，收录于core/film.h和core/film.cpp。<br>Film的构造函数需要整个图像在xy方向上的分辨率，上章的Camera类要用到这些值。有两个函数为Film提供数据。其一，AddSample()，每个采样都会调用这个函数。它以一个采样及其对应的相机光线，辐射亮度值和alpha值做为参数来更新图像。在这个函数中，最终像素值由其附近采样点的加权平均得到。其二，Splat()，使用抛雪球算法(Splatting)更新像素值。给定像素，越多的雪球溅射到它，那么它就越明亮。这个函数使用了光传输算法。<br>Film负责采样器生成采样所需要的整数像素值范围。简单的Film，像素范围是从(0,0)到(xResolution-1,yResolution-1)，但由于像素重构滤波器有限的范围，通常有必要在图像边界稍微外的地方采样。这个范围返回到函数GetSampleExtent()，而函数GetPixelExtent()提供了实际图像中像素的范围。<br>对于某些Film来说，有时需要知道哪个区域的像素最近得到了更新，为此留出空函数UpdateDisplay()。退出主渲染循环后，SamplerRenderer::Render()调用Film::WriteImage()，用于胶片为生成最后的图像做必要的加工，然后存盘或显示。</p>
+<h3 id="7-8-2-图像胶片"><a href="#7-8-2-图像胶片" class="headerlink" title="7.8.2 图像胶片"></a>7.8.2 图像胶片</h3><p>ImageFilm是Film类的一个实现，使用给定重构滤波器对图像采样值进行滤波，并把结果存盘。收录于film/image.h和film/image.cpp。<br>ImageFilm构造函数需要整个图像的分辨率、滤波器函数、裁剪窗口、输出图像文件名以及一个判定是否展示渲染结果的布尔值。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">&lt;ImageFilm Method Definitions&gt; ≡</div><div class="line">    ImageFilm::ImageFilm(<span class="keyword">int</span> xres, <span class="keyword">int</span> yres, Filter *filt, <span class="keyword">const</span> <span class="keyword">float</span> crop[<span class="number">4</span>],</div><div class="line">                         <span class="keyword">const</span> <span class="built_in">string</span> &amp;fn, <span class="keyword">bool</span> openWindow)</div><div class="line">        : Film(xres, yres)</div><div class="line">    &#123;</div><div class="line">        filter = filt;</div><div class="line">        <span class="built_in">memcpy</span>(cropWindow, crop, <span class="number">4</span> * <span class="keyword">sizeof</span>(<span class="keyword">float</span>));</div><div class="line">        filename = fn;</div><div class="line">        &lt;Compute film image extent <span class="number">406</span>&gt;</div><div class="line">        &lt;Allocate film image storage <span class="number">407</span>&gt;</div><div class="line">        &lt;Precompute filter weight table <span class="number">407</span>&gt;</div><div class="line">        &lt;Possibly open window <span class="keyword">for</span> image display&gt;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&lt;ImageFilm Private Data&gt; ≡ <span class="number">404</span></div><div class="line">    Filter *filter;</div><div class="line">    <span class="keyword">float</span> cropWindow[<span class="number">4</span>];</div><div class="line">    <span class="built_in">string</span> filename;</div></pre></td></tr></table></figure></p>
+<p>裁剪窗口和图像整体分辨率给出实际需要的像素范围。裁剪窗口定义在NDC空间，坐标范围是从0到1。xPixelStart和yPixelStart表示裁剪窗口左上角的坐标，xPixelCount和yPixelCount则是xy方向上的像素总数。它们的计算如下：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;Compute film image extent&gt; ≡</div><div class="line">    xPixelStart = Ceil2Int(xResolution * cropWindow[<span class="number">0</span>]);</div><div class="line">    xPixelCount = max(<span class="number">1</span>, Ceil2Int(xResolution * cropWindow[<span class="number">1</span>]) - xPixelStart);</div><div class="line">    yPixelStart = Ceil2Int(yResolution * cropWindow[<span class="number">2</span>]);</div><div class="line">    yPixelCount = max(<span class="number">1</span>, Ceil2Int(yResolution * cropWindow[<span class="number">3</span>]) - yPixelStart);</div></pre></td></tr></table></figure></p>
+<p>得到（裁剪过的）图像像素分辨率，构造器申请一个Pixel结构数组，其中Lxyz存有像素的辐射亮度加权和，weightSum存有采样对像素贡献值的滤波加权和，splatXYZ存有sample splat的和（非加权），而pad是为了把Pixel结构体强行凑够32字节。ImageFilm使用XYZ颜色值存储像素颜色。不使用Spectrum值是因为最终的输出结果不支持完整的光谱采样集，不使用RGB是因为XYZ可以独立的表示颜色，而RGB需要假设一组特定的显示响应曲线。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">&lt;ImageFilm Private Data&gt; +≡ <span class="number">404</span></div><div class="line">    <span class="keyword">struct</span> Pixel</div><div class="line">    &#123;</div><div class="line">        Pixel()</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>; ++i)</div><div class="line">                Lxyz[i] = splatXYZ[i] = <span class="number">0.f</span>;</div><div class="line">            weightSum = <span class="number">0.f</span>;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">float</span> Lxyz[<span class="number">3</span>];</div><div class="line">        <span class="keyword">float</span> weightSum;</div><div class="line">        <span class="keyword">float</span> splatXYZ[<span class="number">3</span>];</div><div class="line">        <span class="keyword">float</span> pad;</div><div class="line">    &#125;;</div><div class="line">    BlockedArray&lt;Pixel&gt; *pixels;</div></pre></td></tr></table></figure></p>
+<p>因为每个图像采样要存取一个小区域中的像素信息，ImageFilm使用BlockedArray存放像素，以降低样本到达和像素值更新时的缓存访问失败次数。BlockedArray同样保证动态分配的数组内存和缓存对齐。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">&lt;Allocate film image storage&gt; ≡ <span class="number">405</span></div><div class="line">    pixels = <span class="keyword">new</span> BlockedArray&lt;Pixel&gt;(xPixelCount, yPixelCount);</div></pre></td></tr></table></figure></p>
+<p>根据像素滤波器的默认设置，每个图像采样大约会影响周边16个像素，这是不小的计算量。ImageFilm预先计算好一个滤波器值的表，这样Film::AddSample()函数可避免调用Filter::Evalulate()的开销，直接使用表中值进行滤波。这里没有使用精确的采样位置滤波，因为误差可忽略。具体实现中，假设滤波器满足f(x,y)=f(|x|,|y|)，表格只存放滤波器偏移量的第一象限部分，这个假设对PBRT中所有滤波器都成立。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">&lt;Precompute filter weight table&gt; ≡ <span class="number">405</span></div><div class="line">    <span class="meta">#<span class="meta-keyword">define</span> FILTER_TABLE_SIZE 16</span></div><div class="line">    filterTable = <span class="keyword">new</span> <span class="keyword">float</span>[FILTER_TABLE_SIZE * FILTER_TABLE_SIZE];</div><div class="line">    <span class="keyword">float</span> *ftp = filterTable;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> y = <span class="number">0</span>; y &lt; FILTER_TABLE_SIZE; ++y)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> fy = ((<span class="keyword">float</span>)y + <span class="number">.5</span>f) *</div><div class="line">                   filter-&gt;yWidth / FILTER_TABLE_SIZE;</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> x = <span class="number">0</span>; x &lt; FILTER_TABLE_SIZE; ++x)</div><div class="line">        &#123;</div><div class="line">            <span class="keyword">float</span> fx = ((<span class="keyword">float</span>)x + <span class="number">.5</span>f) *</div><div class="line">            filter-&gt;xWidth / FILTER_TABLE_SIZE;</div><div class="line">            *ftp++ = filter-&gt;Evaluate(fx, fy);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&lt;ImageFilm Private Data&gt; +≡ <span class="number">404</span></div><div class="line">    <span class="keyword">float</span> *filterTable;</div></pre></td></tr></table></figure></p>
+<p>为了解释ImageFilm::AddSample()，再次给出像素滤波公式。<br>$$I(x,y)=\frac{\sum_i f(x-x_i,y-y_i)L(x_i,y_i)}{\sum_i f(x-x_i,y-y_i)}$$<br>该公式用像素附近采样的辐射亮度值加权和计算每个像素值I(x,y)，其中f为滤波函数。因为所用滤波器范围都有限，所以先计算哪些像素会被当前采样所影响。然后，利用像素滤波公式为每个像素计算最终结果。<br>为了找出被采样影响的像素，Film::AddSample()将采样的连续坐标转为离散坐标，然后xy坐标值分别偏移滤波器的宽度，然后对最小的坐标值取上限，对最大的坐标值取下限，保证滤波器范围外的像素不受当前采样影响。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">&lt;Compute sample’s raster extent&gt; ≡ <span class="number">408</span></div><div class="line">    <span class="keyword">float</span> dimageX = sample.imageX - <span class="number">0.5f</span>;</div><div class="line">    <span class="keyword">float</span> dimageY = sample.imageY - <span class="number">0.5f</span>;</div><div class="line">    <span class="keyword">int</span> x0 = Ceil2Int (dimageX - filter-&gt;xWidth);</div><div class="line">    <span class="keyword">int</span> x1 = Floor2Int(dimageX + filter-&gt;xWidth);</div><div class="line">    <span class="keyword">int</span> y0 = Ceil2Int (dimageY - filter-&gt;yWidth);</div><div class="line">    <span class="keyword">int</span> y1 = Floor2Int(dimageY + filter-&gt;yWidth);</div><div class="line">    x0 = max(x0, xPixelStart);</div><div class="line">    x1 = min(x1, xPixelStart + xPixelCount - <span class="number">1</span>);</div><div class="line">    y0 = max(y0, yPixelStart);</div><div class="line">    y1 = min(y1, yPixelStart + yPixelCount - <span class="number">1</span>);</div><div class="line">    <span class="keyword">if</span> ((x1-x0) &lt; <span class="number">0</span> || (y1-y0) &lt; <span class="number">0</span>)</div><div class="line">        <span class="keyword">return</span>;</div></pre></td></tr></table></figure></p>
+<p>有了采样的像素范围(x0,y0)到(x1,y1)，对其中所有像素进行循环，然后对采样值进行相应的滤波。在循环开始前，要检测滤波器是否大于一个像素的宽。如果是，在图像框(image tiles)边界上的采样会因为滤波器的范围问题影响到其他的框，这时必须保证多个线程在恰当的时间同时进入函数，整合像素值的更新；如果不是，那么像素过程就不需要并行。<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">&lt;Loop over filter support and add sample to pixel arrays&gt; ≡ 408</div><div class="line">    float xyz[3];</div><div class="line">    L.ToXYZ(xyz);</div><div class="line">    &lt;Precompute x and y filter table offsets 410&gt;</div><div class="line">    bool syncNeeded = (filter-&gt;xWidth &gt; 0.5f || filter-&gt;yWidth &gt; 0.5f);</div><div class="line">    for (int y = y0; y &lt;= y1; ++y)</div><div class="line">    &#123;</div><div class="line">        for (int x = x0; x &lt;= x1; ++x)</div><div class="line">        &#123;</div><div class="line">            &lt;Evaluate filter value at (x, y) pixel 410&gt;</div><div class="line">            &lt;Update pixel values with filtered sample contribution 410&gt;</div><div class="line">        &#125;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>每个离散的像素(x,y)使用以其为中心的滤波函数。为计算某个采样的过滤器权值，需要得到离散坐标下像素到采样位置的偏移量，然后求滤波器的值。如果我们直接求滤波器的值，需要做下面的计算。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">filterWt = filter-&gt;Evaluate(x - dimageX, y - dimageY);</div></pre></td></tr></table></figure></p>
+<p>而实际上是从一个预计算的表里取值。给定采样位置(x,y)和像素位置(x’,y’)，计算偏置量(x’-x, y’-y)，并把它安置到滤波权值表中的相应位置。将采样偏置值除以改方向上的滤波器宽度，得到的值属于0到1之间，然后在乘表格的大小。注意x方向上的每行像素y的偏置量是常量，反之同理。因此在循环像素之前可以预计算这些索引。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">&lt;Precompute x and y filter table offsets&gt; ≡ <span class="number">409</span></div><div class="line">    <span class="keyword">int</span> *ifx = ALLOCA(<span class="keyword">int</span>, x1 - x0 + <span class="number">1</span>);</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> x = x0; x &lt;= x1; ++x)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> fx = fabsf((x - dimageX) *</div><div class="line">                        filter-&gt;invXWidth * FILTER_TABLE_SIZE);</div><div class="line">        ifx[x-x0] = min(Floor2Int(fx), FILTER_TABLE_SIZE<span class="number">-1</span>);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">int</span> *ify = ALLOCA(<span class="keyword">int</span>, y1 - y0 + <span class="number">1</span>);</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> y = y0; y &lt;= y1; ++y)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> fy = fabsf((y - dimageY) *</div><div class="line">                        filter-&gt;invYWidth * FILTER_TABLE_SIZE);</div><div class="line">        ify[y-y0] = min(Floor2Int(fy), FILTER_TABLE_SIZE<span class="number">-1</span>);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>这样对于每个像素而言，它在滤波器表中x、y偏移量可查表求得，同时就知道了它在数组中的偏移量和滤波值。<br><figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&lt;Evaluate filter value at (x, y) pixel&gt; ≡ 409</div><div class="line">    int offset = ify[y-y0]*FILTER_TABLE_SIZE + ifx[x-x0];</div><div class="line">    float filterWt = filterTable[offset];</div></pre></td></tr></table></figure></p>
+<p>对每个受影响的像素，需要添加XYZ的分量和滤波权重。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">&lt;Update pixel values with filtered sample contribution&gt; ≡ <span class="number">409</span></div><div class="line">    Pixel &amp;pixel = (*pixels)(x - xPixelStart, y - yPixelStart);</div><div class="line">    <span class="keyword">if</span> (!syncNeeded)</div><div class="line">    &#123;</div><div class="line">        pixel.Lxyz[<span class="number">0</span>] += filterWt * xyz[<span class="number">0</span>];</div><div class="line">        pixel.Lxyz[<span class="number">1</span>] += filterWt * xyz[<span class="number">1</span>];</div><div class="line">        pixel.Lxyz[<span class="number">2</span>] += filterWt * xyz[<span class="number">2</span>];</div><div class="line">        pixel.weightSum += filterWt;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">else</span> </div><div class="line">    &#123;</div><div class="line">        &lt;Safely update Lxyz and weightSum even with concurrency <span class="number">411</span>&gt;</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>为防止并行时出现问题，使用原子操作为每个像素安全的更新值。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt; update Lxyz and weightSum even with concurrency&gt; ≡ <span class="number">410</span></div><div class="line">    AtomicAdd(&amp;pixel.Lxyz[<span class="number">0</span>], filterWt * xyz[<span class="number">0</span>]);</div><div class="line">    AtomicAdd(&amp;pixel.Lxyz[<span class="number">1</span>], filterWt * xyz[<span class="number">1</span>]);</div><div class="line">    AtomicAdd(&amp;pixel.Lxyz[<span class="number">2</span>], filterWt * xyz[<span class="number">2</span>]);</div><div class="line">    AtomicAdd(&amp;pixel.weightSum, filterWt);</div></pre></td></tr></table></figure></p>
+<p>函数Splat()的实现就是计算采样映射到了哪个像素，并且累加这种影响。同样期望使用原子操作。这里的实现使用一个像素宽的盒滤波器为采样滤波。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">&lt;ImageFilm Method Definitions&gt; +≡</div><div class="line">    <span class="keyword">void</span> ImageFilm::Splat(<span class="keyword">const</span> CameraSample &amp;sample, <span class="keyword">const</span> Spectrum &amp;L)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> xyz[<span class="number">3</span>];</div><div class="line">        L.ToXYZ(xyz);</div><div class="line">        <span class="keyword">int</span> x = Floor2Int(sample.imageX), y = Floor2Int(sample.imageY);</div><div class="line">        <span class="keyword">if</span> (x &lt; xPixelStart || x - xPixelStart &gt;= xPixelCount ||</div><div class="line">            y &lt; yPixelStart || y - yPixelStart &gt;= yPixelCount)</div><div class="line">            <span class="keyword">return</span>;</div><div class="line">        Pixel &amp;pixel = (*pixels)(x - xPixelStart, y - yPixelStart);</div><div class="line">        AtomicAdd(&amp;pixel.splatXYZ[<span class="number">0</span>], xyz[<span class="number">0</span>]);</div><div class="line">        AtomicAdd(&amp;pixel.splatXYZ[<span class="number">1</span>], xyz[<span class="number">1</span>]);</div><div class="line">        AtomicAdd(&amp;pixel.splatXYZ[<span class="number">2</span>], xyz[<span class="number">2</span>]);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>因为像素重构滤波器跨越了许多像素，Sampler一定生成了超过像素范围的图像采样，这也将被输出。这样的话，处于边界的像素和处于内部的像素能得到相同的采样密度。这也是渲染过程要经过窗口剪裁的原因，有助于消除边缘的伪影。具体实现不再给出。<br><strong>图像输出</strong><br>主渲染循环结束后，Scene::Render()调用Film::WriteImage()存盘。先为存储RGB像素值的数组申请空间。如果得到显示设备的反应特征信息，就可以将像素值从XYZ转为设备相关的RGB。这相当一次光谱基函数的改变，新的基函数由显示设备的RGB光谱反应曲线所决定。这里将XYZ值转换为基于HDTV标准设备的RGB值，因为这适合于大多数现代显示设备。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">&lt;Convert pixel XYZ color to RGB&gt; ≡ <span class="number">412</span></div><div class="line">    XYZToRGB((*pixels)(x, y).Lxyz, &amp;rgb[<span class="number">3</span>*offset]);</div></pre></td></tr></table></figure></p>
+<p>RGB的输出值被初始化时，每个像素采样值除以Pixel::weightSum得到像素滤波方程的最终值。这个转换可能导致RGB中出现负值，重构的像素也可能以负值结束，对此要做边界控制。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;Normalize pixel with weight sum&gt; ≡ <span class="number">412</span></div><div class="line">    <span class="keyword">float</span> weightSum = (*pixels)(x, y).weightSum;</div><div class="line">    <span class="keyword">if</span> (weightSum != <span class="number">0.f</span>)</div><div class="line">    &#123;</div><div class="line">        <span class="keyword">float</span> invWt = <span class="number">1.f</span> / weightSum;</div><div class="line">        rgb[<span class="number">3</span>*offset ] = max(<span class="number">0.f</span>, rgb[<span class="number">3</span>*offset ] * invWt);</div><div class="line">        rgb[<span class="number">3</span>*offset+<span class="number">1</span>] = max(<span class="number">0.f</span>, rgb[<span class="number">3</span>*offset+<span class="number">1</span>] * invWt);</div><div class="line">        rgb[<span class="number">3</span>*offset+<span class="number">2</span>] = max(<span class="number">0.f</span>, rgb[<span class="number">3</span>*offset+<span class="number">2</span>] * invWt);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>还要为每个像素添加最终的splat值。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;Add splat value at pixel&gt; ≡ <span class="number">412</span></div><div class="line">    <span class="keyword">float</span> splatRGB[<span class="number">3</span>];</div><div class="line">    XYZToRGB((*pixels)(x, y).splatXYZ, splatRGB);</div><div class="line">    rgb[<span class="number">3</span>*offset ] += splatScale * splatRGB[<span class="number">0</span>];</div><div class="line">    rgb[<span class="number">3</span>*offset+<span class="number">1</span>] += splatScale * splatRGB[<span class="number">1</span>];</div><div class="line">    rgb[<span class="number">3</span>*offset+<span class="number">2</span>] += splatScale * splatRGB[<span class="number">2</span>];</div></pre></td></tr></table></figure></p>
+<p>最后完成文件写入，释放内存。</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/CG/" rel="tag">#CG</a>
+          
+            <a href="/tags/PBRT/" rel="tag">#PBRT</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/09/12/pbrt-ch7-2/" rel="next" title="PBRT 章节7 采样与重构 2/3">
+                <i class="fa fa-chevron-left"></i> PBRT 章节7 采样与重构 2/3
+              </a>
+            
+          </div>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel ">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.png"
+               alt="Sulpures" />
+          <p class="site-author-name" itemprop="name">Sulpures</p>
+          <p class="site-description motion-element" itemprop="description">「今せぇいっぱい生きよう」</p>
+        </div>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">10</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">1</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+            
+              
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#7-7-图像重构-P418"><span class="nav-number">1.</span> <span class="nav-text">7.7 图像重构 P418</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#7-7-1滤波函数"><span class="nav-number">1.1.</span> <span class="nav-text">7.7.1滤波函数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-8-胶片和图象管线-431"><span class="nav-number">2.</span> <span class="nav-text">7.8 胶片和图象管线 431</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#7-8-1-Film接口"><span class="nav-number">2.1.</span> <span class="nav-text">7.8.1 Film接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-8-2-图像胶片"><span class="nav-number">2.2.</span> <span class="nav-text">7.8.2 图像胶片</span></a></li></ol></li></ol></div>
+            
+          </div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2016</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Sulpures</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/vendors/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.0.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.0.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.0.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.0.1"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+  
+  
+
+  
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+        processEscapes: true,
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+  </script>
+
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for (i=0; i < all.length; i += 1) {
+        all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+    });
+  </script>
+  <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+  
+
+  
+
+</body>
+</html>
