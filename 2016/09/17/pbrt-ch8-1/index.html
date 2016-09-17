@@ -1,0 +1,655 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/vendors/font-awesome/css/font-awesome.min.css?v=4.4.0" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.0.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="CG,PBRT," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.0.1" />
+
+
+
+
+
+
+<meta name="description" content="本章定义了描述光在表面上散射的类。表面反射模型有几个来源：
+
+实验数据：在实验室中测得表面的反射分布性质，作为系数引用
+现象学模型：建立描述真实世界表面性质的方程，如BSDF
+仿真：知道一个表面组成部分的底层信息，通过模拟微观几何的散射来得到反射数据
+波动光学：将光视为一种波，并通过解麦克斯韦方程来研究光在表面上的散射过程。这个模型更耗时，效果却未必好于几何光学
+几何光学：和仿真相似，如果知道了面">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PBRT 章节8 反射模型 1/2">
+<meta property="og:url" content="http://sulpures.me/2016/09/17/pbrt-ch8-1/index.html">
+<meta property="og:site_name" content="僕だけ居る">
+<meta property="og:description" content="本章定义了描述光在表面上散射的类。表面反射模型有几个来源：
+
+实验数据：在实验室中测得表面的反射分布性质，作为系数引用
+现象学模型：建立描述真实世界表面性质的方程，如BSDF
+仿真：知道一个表面组成部分的底层信息，通过模拟微观几何的散射来得到反射数据
+波动光学：将光视为一种波，并通过解麦克斯韦方程来研究光在表面上的散射过程。这个模型更耗时，效果却未必好于几何光学
+几何光学：和仿真相似，如果知道了面">
+<meta property="og:updated_time" content="2016-09-17T12:56:12.236Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="PBRT 章节8 反射模型 1/2">
+<meta name="twitter:description" content="本章定义了描述光在表面上散射的类。表面反射模型有几个来源：
+
+实验数据：在实验室中测得表面的反射分布性质，作为系数引用
+现象学模型：建立描述真实世界表面性质的方程，如BSDF
+仿真：知道一个表面组成部分的底层信息，通过模拟微观几何的散射来得到反射数据
+波动光学：将光视为一种波，并通过解麦克斯韦方程来研究光在表面上的散射过程。这个模型更耗时，效果却未必好于几何光学
+几何光学：和仿真相似，如果知道了面">
+
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: 0,
+      author: '博主'
+    }
+  };
+</script>
+
+
+
+
+  <link rel="canonical" href="http://sulpures.me/2016/09/17/pbrt-ch8-1/"/>
+
+  <title> PBRT 章节8 反射模型 1/2 | 僕だけ居る </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">僕だけ居る</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+  <p class="site-subtitle"></p>
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                PBRT 章节8 反射模型 1/2
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            <span class="post-meta-item-icon">
+              <i class="fa fa-calendar-o"></i>
+            </span>
+            <span class="post-meta-item-text">发表于</span>
+            <time itemprop="dateCreated" datetime="2016-09-17T20:50:22+08:00" content="2016-09-17">
+              2016-09-17
+            </time>
+          </span>
+
+          
+            <span class="post-category" >
+              &nbsp; | &nbsp;
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                  <a href="/categories/Graphics/" itemprop="url" rel="index">
+                    <span itemprop="name">Graphics</span>
+                  </a>
+                </span>
+
+                
+                
+
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+
+          
+          
+
+          
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>本章定义了描述光在表面上散射的类。<br>表面反射模型有几个来源：</p>
+<ul>
+<li>实验数据：在实验室中测得表面的反射分布性质，作为系数引用</li>
+<li>现象学模型：建立描述真实世界表面性质的方程，如BSDF</li>
+<li>仿真：知道一个表面组成部分的底层信息，通过模拟微观几何的散射来得到反射数据</li>
+<li>波动光学：将光视为一种波，并通过解麦克斯韦方程来研究光在表面上的散射过程。这个模型更耗时，效果却未必好于几何光学</li>
+<li>几何光学：和仿真相似，如果知道了面的底层的散射和几何性质，从中推导出有解析表达式的反射模型。几何光学模型忽略偏振等复杂效应</li>
+</ul>
+<p>SamplerRenderer使用后，渲染器决定沿某条光线哪个面是第一个可见的。之后调用积分器类，使用表面着色器决定面上点的BSDF，积分器使用这个BSDF计算点上的散射光。<br><strong>基本术语</strong><br>表面反射可以分为四大类：漫反射(diffuse)，光泽镜面反射(glossy specular)，理想镜面反射(perfect specular)，逆反射(retro-reflective)。大多数表面的反射是这四类的混合。漫发射将光线均等地向所有方向上散射；光泽镜面表面向一组特定的方向进行散射——可以映照出其它物体的模糊的映像，如塑料；理想镜面表面只向一个单一的方向散射，如镜子和玻璃；逆反射表面主要向入射光方向对光线进行散射。<br>给定反射类型，反射分布函数可以是各向同性（isotropic）或者是各向异性（anisotropic）。大多数物体是各向同性的：如果选定表面上的一个点绕该点的法向量旋转，所反射的光的总量不变。相反，对各向异性材料做这样的旋转，会反射出不同量的光。<br><strong>几何设置</strong><br>PBRT反射的计算在反射坐标系中进行，在该坐标系中被着色的点上的两个切向量和法向量分别和xyz轴对齐，所有BRDF和BTDF函数的传入向量和返回向量都是在这个坐标系下定义。着色坐标系还需要球面坐标（θ，Φ）表示方向。此外，入射光ωi和出射光ωo在被变换到表面上局部坐标系之后，都要正规化且方向向外。注意表面法向量可能和ωi或者ωo不在物体的同一侧，PBRT不会因此翻转法向量。还有，用于着色的局部坐标系可能不等同于Shape::Intersect()返回的坐标系，它们在求交过程和着色过程之间可以被修改用于实现凸凹纹理映射(bump mapping)这类的效果。<br>本章BRDF和BTDF的实现不关心ωi和ωo是否位于同一半球。例，当一个BRDF入射光在表面上且出射方向在表面下，那么此时不存在反射，但，希望反射函数能够计算光的反射量，而忽略它们是否在同一个半球这个细节，更高层的代码会保证反射或散射能被正常调用。</p>
+<h2 id="8-1-基本接口-P457"><a href="#8-1-基本接口-P457" class="headerlink" title="8.1 基本接口 P457"></a>8.1 基本接口 P457</h2><p>BRDF和BTDF共享一个基类BxDF，它定义了要实现的基本接口。下一章介绍BSDF类存放一组BxDF对象用于描述表面上一个点的散射情况。虽然使用一个共同接口隐藏了反射材质和透射材质的实现细节，但光传输算法需要区分这两种类型。为此所有BxDF要有一个type成员还存放BxDF的类型标志。对于每个BxDF，必须反射或散射中取其一，且必须在漫反射、光泽反射和镜面反射中取其一。这里将逆反射视为光泽反射。MatchesFlags()函数用来检测BxDF是否具备参数提供的标志。<br>BxDF的关键函数是BxDF::f()，它返回给定一对方向对应的分布函数值。这个接口隐性假定不同波长上的光不相干：一个波长上的能量不会以不同的波长的形式被反射。并不是所有的BxDF都用该函数。例如，镜子、玻璃或水这样的全镜面反射物体只在单一出射方向上对单一方向的入射光散射，描述这样BxDF的最好方法是δ分布函数：除出射方向之外其它方向的值都为0。<br>BxDF::Sample_f()函数使用δ分布描述这样的散射，也用它来对BxDF所散射出的多个光线的方向进行随机采样。在蒙特卡洛取样中，给定出射方向之后BxDF::Sample_f()计算入射光的方向ωi，并根据这一对方向计算BxDF值。对于delta分布而言，需要利用这种方式生成适当的ωi方向，因为调用者无法生成相应的ωi方向。利用delta分布的BxDF并不需要参数u1，u2和pdf。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">&lt;BxDF Interface&gt; +≡ <span class="number">428</span></div><div class="line">    <span class="function"><span class="keyword">virtual</span> Spectrum <span class="title">f</span><span class="params">(<span class="keyword">const</span> Vector &amp;wo, <span class="keyword">const</span> Vector &amp;wi)</span> <span class="keyword">const</span> </span>= <span class="number">0</span>;</div><div class="line"></div><div class="line">&lt;BxDF Interface&gt; +≡ <span class="number">428</span></div><div class="line">    <span class="function"><span class="keyword">virtual</span> Spectrum <span class="title">Sample_f</span><span class="params">(<span class="keyword">const</span> Vector &amp;wo, Vector *wi,</span></span></div><div class="line">                              <span class="keyword">float</span> u1, <span class="keyword">float</span> u2, <span class="keyword">float</span> *pdf) <span class="keyword">const</span>;</div></pre></td></tr></table></figure></p>
+<h3 id="8-1-1-反射率"><a href="#8-1-1-反射率" class="headerlink" title="8.1.1 反射率"></a>8.1.1 反射率</h3><p>有时需要聚合4D的BRDF或BTDF（定义在一对方向上的函数），将其缩减为单一方向上的2D函数，甚至缩减为一个能描述总体上的散射行为的常数。<br>半球-方向反射率函数(hemispherical-directional reflectance)是一个2D函数，它给出了半球上恒定照明下某个方向的总反射量，也可以被等价地认为是来自某个给定方向上的光在半球上的总反射量。<br>$$\rho_{hd}(\omega<em>o)=\int</em>{H^2(N)}f_r(p,\omega_o,\omega_i)|\cos\theta_i|d\omega<em>i$$<br>BxDF::rho()计算上述ρhd。某些BxDF可以用解析表达式来计算这个值，但大多数BxDF用Monte Carlo积分来计算其近似值。<br>表面的半球-半球反射率(hemispherical- hemispherical reflectance)是一个光谱值常量，给出了所有方向入射光相同的情况下，一个表面上入射光被反射的比。<br>$$\rho</em>{hh}(\omega<em>o)=\frac{1}{\pi}\int</em>{H^2(N)}\int_{H^2(N)}f_r(p,\omega_o,\omega_i)|\cos\theta_o\cos\theta_i|d\omega_od\omega_i$$<br>当没有方向ωo时，重载函数BxDF::rho()计算ρhh，其余的参数在计算Monte Carlo近似值时会用到。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">&lt;BxDF Interface&gt; +≡ <span class="number">428</span></div><div class="line">    <span class="function"><span class="keyword">virtual</span> Spectrum <span class="title">rho</span><span class="params">(<span class="keyword">const</span> Vector &amp;wo, <span class="keyword">int</span> nSamples,</span></span></div><div class="line">                         <span class="keyword">const</span> <span class="keyword">float</span> *samples) <span class="keyword">const</span>;</div><div class="line"></div><div class="line">&lt;BxDF Interface&gt; +≡ <span class="number">428</span></div><div class="line">    <span class="function"><span class="keyword">virtual</span> Spectrum <span class="title">rho</span><span class="params">(<span class="keyword">int</span> nSamples, <span class="keyword">const</span> <span class="keyword">float</span> *samples1,</span></span></div><div class="line">                         <span class="keyword">const</span> <span class="keyword">float</span> *samples2) <span class="keyword">const</span>;</div></pre></td></tr></table></figure></p>
+<h3 id="8-1-2-BRDF-gt-BTDF适配器"><a href="#8-1-2-BRDF-gt-BTDF适配器" class="headerlink" title="8.1.2 BRDF-&gt;BTDF适配器"></a>8.1.2 BRDF-&gt;BTDF适配器</h3><p>为了将已定义的BRDF当作BTDF使用，需要一个适配器类。BRDFToBTDF类利用BRDF构造函数的参数实现BTDF。特别的，这需要将函数调用传给BRDF，并翻转ωi方向。<br>适配器的构造函数只需将BxDF::type中的反射标志和透射标志对调。之后，适配器要将入射方向转换为另一半球上相应的方向。在调用BRDF的BxDF::rho()、BxDF::f()、和BxDF::Sample_f()函数时，调用BRDFToBTDF::otherHemisphere()来将光线翻转到另一个半球上：</p>
+<h3 id="8-1-3-BxDF缩放适配器"><a href="#8-1-3-BxDF缩放适配器" class="headerlink" title="8.1.3 BxDF缩放适配器"></a>8.1.3 BxDF缩放适配器</h3><p>有时需要根据Spectrum值放缩给定BxDF的贡献值。ScaledBxDF类完成这个功能，成员变量为BxDF和Spectrum。MixMaterial会用到这个类，加权混合两个材质并以此创建BSDF。</p>
+<h2 id="8-2-镜面反射和透射-P461"><a href="#8-2-镜面反射和透射-P461" class="headerlink" title="8.2 镜面反射和透射 P461"></a>8.2 镜面反射和透射 P461</h2><p>完全光滑的表面，对于给定的方向ωi，所有的光线被散射到单一的出射方向ωo。对于镜面反射，θi = θo。对于透射，出射方向由斯涅耳(Snell)定律决定。一般会忽略色散。<br>$$\eta_i \sin\theta_i=\eta_t \sin\theta_t$$</p>
+<h3 id="8-2-1-菲涅耳反射率"><a href="#8-2-1-菲涅耳反射率" class="headerlink" title="8.2.1 菲涅耳反射率"></a>8.2.1 菲涅耳反射率</h3><p>入射光被反射和透射的比为反射率或透射率，这个量和视角相关，而不是一个比例常量。菲涅耳(Fresnel）方程描述了光在表面上被反射的量，它实际上是麦克斯韦方程组在光滑表面上的解。<br>有两种Fresnel方程，一种用于绝缘体，一种用于导体。对于每两种情况，Fresnel方程又根据入射光的偏振情况分两种形式。偏振很难处理，PBRT假设光不会偏振，即光波的朝向随机。为此Fresnel反射率等于平行偏振项的平方和垂直偏振项的平方的平均值。<br>为计算绝缘体的Fresnel反射率，需要知道两种介质的折射率，这个数据可查表。绝缘体Fresnel反射率公式的近似表达式如下，分别为平行偏振光和垂直偏振光的反射率。<br>$$r_\parallel=\frac{\eta_t\cos\theta_i-\eta_i\cos\theta_t}{\eta_t\cos\theta_i+\eta_i\cos\theta<em>t}\<br>r</em>\perp=\frac{\eta_i\cos\theta_i-\eta_t\cos\theta_t}{\eta_i\cos\theta_i+\eta_t\cos\theta_t}$$<br>无偏振光，Fresnel反射率为：<br>$$F<em>r=\frac{1}{2}(r^2</em>{\parallel}+r^2<em>{\perp})$$<br>函数FrDiel()完成了绝缘材质和圆偏振光所使用的Fresnel反射公式的计算（即上述）。自然，绝缘体所透射的能量为1-Fr（能量守恒）。<br>不同于绝缘体，导体对光不产生透射，一些入射光会被材料吸收并转化为热量。Fresnel公式可得出有多少光被反射，该公式要用到导体的折射率η和吸收系数k。导体Fresnel反射率公式的一个常用的近似公式如下。<br>$$r</em>\parallel=\frac{(\eta^2+k^2)\cos\theta_i^2-2\eta\cos\theta_i +1}{(\eta^2+k^2)\cos\theta_i^2+2\eta\cos\theta<em>i +1}\<br>r</em>\perp=\frac{(\eta^2+k^2)-2\eta\cos\theta_i +\cos\theta_i^2}{(\eta^2+k^2)+2\eta\cos\theta_i +\cos\theta_i^2}$$<br>定义抽象类Fresnel提供计算菲涅尔反射的接口，FresnelConductor和FresnelDielectric继承了它。Fresnel类唯一需要实现的是Evaluate()，需要入射光线和面法线的余弦值，返回面反射的光的量值。<br><strong>Fresnel导体</strong><br>FresnelConductor继承于Fresnel，其构造函数存放给定的折射率η和吸收系数k，它实现Evaluate()只是调用FrCond()，但cosi要绝对值，因为FrCond()要求法向量和入射方向ωi在同一侧。<br><strong>Fresnel绝缘体</strong><br>FresnelDielectric构造函数存放表面两侧的折射率，它实现Evaluate()比导体复杂些。首先确定入射方向在介质内部还是外部，其次使用Snell定律计算透射方向和法向量的夹角，最后得到该角度的余弦值。<br>用入射角的余弦符号判定光线在介质的哪一侧。如果余弦值在0到1之间，则光线在介质外，否则就在内，并匹配好折射率。得到折射率，Snell定律计算sinθt。注意发生全反射时没必要使用Fresnel方程。<br><strong>FresnelNoOp接口</strong><br>FresnelNoOp实现了Fresnel接口，它对所有的入射方向返回100%的反射率。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;BxDF Declarations&gt; +≡</div><div class="line">    <span class="keyword">class</span> FresnelNoOp : <span class="keyword">public</span> Fresnel</div><div class="line">    &#123;</div><div class="line">    <span class="keyword">public</span>:</div><div class="line">        <span class="function">Spectrum <span class="title">Evaluate</span><span class="params">(<span class="keyword">float</span>)</span> <span class="keyword">const</span></span></div><div class="line">        &#123;</div><div class="line">            <span class="keyword">return</span> Spectrum(<span class="number">1.</span>);</div><div class="line">        &#125;</div><div class="line">    &#125;;</div></pre></td></tr></table></figure></p>
+<h3 id="8-2-2-镜面反射"><a href="#8-2-2-镜面反射" class="headerlink" title="8.2.2 镜面反射"></a>8.2.2 镜面反射</h3><p>SpecularReflection类使用Fresnel类描述了物理上的镜面反射。首先，尝试推导镜面反射的BRDF。Fresnel方程给出了光线反射率Fr(ωi)，为此需要一个满足如下关系的BRDF。<br>$$L_o(\omega_o)=f_r(\omega_o,\omega_i)L_i(\omega_i)=F_r(\omega_i)L_i(\omega_i)$$<br>    Lo(ωo) = fr(ωo, ωi) Li(ωi) = Fr(ωi)Li(ωi)<br>其中ωi是ωo关于法向量的反射向量。因为镜面反射θi=θo，所以Fr(ωo)=Fr(ωi)。<br>此类BRDF可以用狄拉克δ分布构造，δ分布有如下性质：<br>$$\int f(x)\delta (x-x_0)dx=f(x_0)$$<br>δ分布函数需要特殊的处理，特别地，对δ分布的积分必须显式按照δ分布的本身的意义求值，否则它的值无法计算。例，考虑上式，如果用梯形面积规则或其它数值积分技术来值，那么根据δ分布的定义，任何求值点xi都不会有非零的δ(xi)值。所以，必须允许δ分布自己确定求值点。<br>直观的，这里希望BRDF在除了理想反射方向之外的任何地方都是0，为此求助于δ分布，最容易想到的方法是简单地使用δ函数，将入射方向限制在反射角度ωr。这样就产生如下的BRDF。<br>$$f_r(p,\omega_o,\omega_i)=\delta(\omega_i-\omega_r)=\delta(\cos\theta_i-\cos\theta_r) \delta(\phi_i-\phi_r)$$<br>目测还可以，但代入第5章的散射方程会得到：<br>$$L_o(\theta_o,\phi_o)=L_i(\theta_r,\phi_r\pm \pi)|\cos\theta_i|$$<br>这是错的，因为它包含了一个额外的cosθi。但除去它就得到正确的理想镜面反射BRDF。<br>$$f_r(p,\omega_o,\omega_i)=F_r(\omega_o)\frac{\delta(\omega_i-R(\omega_o,n))}{|\cos\theta_i|}$$<br>其中R(ωo,n)是ωo关于法向量n的镜面反射向量。<br>SpecularReflection使用了一个Fresnel对象来描述绝缘体或导体的Fresnel特性，此外还需一个Spectrum对象，用于对反射的颜色进行比例变换。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;SpecularReflection Public Methods&gt; ≡ <span class="number">440</span></div><div class="line">    SpecularReflection(<span class="keyword">const</span> Spectrum &amp;r, Fresnel *f)</div><div class="line">        : BxDF(BxDFType(BSDF_REFLECTION | BSDF_SPECULAR)),</div><div class="line">          R(r), fresnel(f) &#123; &#125;</div></pre></td></tr></table></figure></p>
+<p>SpecularReflection::f()不产生散射，因此它的实现很简单。Sample_f()函数根据δ分布来选择适当的方向，它将输出变量wi设置为wo关于法向量的反射方向。*pdf值被设置为1，因为在此情况下没有Monte Carlo采样。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">&lt;SpecularReflection Public Methods&gt; +≡ <span class="number">440</span></div><div class="line">    <span class="function">Spectrum <span class="title">f</span><span class="params">(<span class="keyword">const</span> Vector &amp;, <span class="keyword">const</span> Vector &amp;)</span> <span class="keyword">const</span></span></div><div class="line">    &#123;</div><div class="line">        <span class="keyword">return</span> Spectrum(<span class="number">0.</span>);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&lt;BxDF Method Definitions&gt; +≡</div><div class="line">    Spectrum SpecularReflection::Sample_f(<span class="keyword">const</span> Vector &amp;wo,</div><div class="line">        Vector *wi, <span class="keyword">float</span> u1, <span class="keyword">float</span> u2, <span class="keyword">float</span> *pdf) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        *wi = Vector(-wo.x, -wo.y, wo.z);</div><div class="line">        *pdf = <span class="number">1.f</span>;</div><div class="line">        <span class="keyword">return</span> fresnel-&gt;Evaluate(CosTheta(wo)) * R / AbsCosTheta(*wi);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<h2 id="8-2-3-镜面透射"><a href="#8-2-3-镜面透射" class="headerlink" title="8.2.3 镜面透射"></a>8.2.3 镜面透射</h2><p>推导镜面透射的BTDF公式。Snell定律是基础，它给出了透射光线的方向，而且显示出光线进入不同介质时辐射亮度所发生的变化。<br>设两个介质有不同的折射率ηi和ηo，入射能量被送入到出射方向的能量比率为τ，τ=1-Fr(ωi)。透射微分辐射通量为：<br>$$d\Phi_o=\tau d\Phi_i$$<br>根据辐射亮度的公式：<br>$$(L_o\cos\theta_odAd\omega_o)=\tau (L_i\cos\theta_idAd\omega_i)$$<br>立体角展开为球面角：<br>$$(L_o\cos\theta_odA\sin\theta_od\theta_od\phi_o)=\tau (L_i\cos\theta_idA\sin\theta_id\theta_id\phi_i)$$<br>对Snell定律进行关于θ的微分：<br>$$\frac{cos\theta_od\theta_o}{cos\theta_id\theta_i}=\frac{\eta_i}{\eta_o}$$<br>Snell定律代入上式：<br>$$L_o\eta^2_id\phi_o=\tau L_i\eta_o^2d\phi_i$$<br>Φi=Φo+π，所以dΦi=dΦo。得到最后的关系式：<br>$$L_o=\tau L_i\frac{\eta^2_o}{\eta_i^2}$$<br>因此，得到镜面透射的BTDF。<br>$$f_t(p,\omega_i,\omega_o)=\frac{\eta^2_o}{\eta^2_i}(1-F_r(\omega_i))\frac{\delta(\omega_i-T(\omega_o,n))}{|\cos\theta_i|}$$<br>其中T(ωi, n)是ωi关于法向量n的镜面透射向量。<br>SpectularTransmission类几乎和SpecularReflection一样，唯一不同的是被采样的方向是理想镜面透射的方向。<br>SpectularTransmission构造函数存放了表面两侧的折射率，还有一个透射比例因子T。因为导体对光线没有透射作用，因此进行Fresnel计算时，总是用一个FresnelDielectric对象。同SpecularReflection类，SpecularTransmission::f()总是返回0。<br>入射光在表面上发生折射，Snell定律给出了透射光线跟法向量的夹角θt。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&lt;BxDF Method Definitions&gt; +≡</div><div class="line">    Spectrum SpecularTransmission::Sample_f(<span class="keyword">const</span> Vector &amp;wo,</div><div class="line">        Vector *wi, <span class="keyword">float</span> u1, <span class="keyword">float</span> u2, <span class="keyword">float</span> *pdf) <span class="keyword">const</span></div><div class="line">    &#123;</div><div class="line">        &lt;Figure out which η is incident and which is transmitted <span class="number">445</span>&gt;</div><div class="line">        &lt;Compute transmitted ray direction <span class="number">445</span>&gt;</div><div class="line">        *pdf = <span class="number">1.f</span>;</div><div class="line">        Spectrum F = fresnel.Evaluate(CosTheta(wo));</div><div class="line">        <span class="keyword">return</span> (et*et)/(ei*ei) * (Spectrum(<span class="number">1.</span>)-F) * T /</div><div class="line">               AbsCosTheta(*wi);</div><div class="line">    &#125;</div></pre></td></tr></table></figure></p>
+<p>函数首先确定入射光线进入还是离开折射介质，钦定法向量(0,0,1)指向物体外，那么若ωi的z值大于0则入射光线就是从外面进入物体。<br>之后计算sinθi的平方和sinθt的平方，再求cosθt，即透射方向的z分量。为了计算透射方向的x、y分量，先对ωi做关于法向量的镜像，然后乘以比率sinθt/sinθi。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;Compute transmitted ray direction&gt; ≡ <span class="number">444</span></div><div class="line">    <span class="keyword">float</span> sini2 = SinTheta2(wo);</div><div class="line">    <span class="keyword">float</span> eta = ei / et;</div><div class="line">    <span class="keyword">float</span> sint2 = eta * eta * sini2;</div><div class="line">    &lt;Handle total internal reflection <span class="keyword">for</span> transmission <span class="number">446</span>&gt;</div><div class="line">    <span class="keyword">float</span> cost = sqrtf(max(<span class="number">0.f</span>, <span class="number">1.f</span> - sint2));</div><div class="line">    <span class="keyword">if</span> (entering)</div><div class="line">        cost = -cost;</div><div class="line">    <span class="keyword">float</span> sintOverSini = eta;</div><div class="line">    *wi = Vector(sintOverSini * -wo.x, sintOverSini * -wo.y, cost);</div></pre></td></tr></table></figure></p>
+<p>注意处理全内反射。当sinθt的平方大于1时不会产生透射，即返回黑色。</p>
+<pre><code class="CPP">&lt;Handle total internal reflection <span class="keyword">for</span> transmission&gt; ≡ <span class="number">445</span>
+    <span class="keyword">if</span> (sint2 &gt;= <span class="number">1.</span>)
+        <span class="keyword">return</span> <span class="number">0.</span>;
+</code></pre>
+<h2 id="8-3-朗伯反射-P475"><a href="#8-3-朗伯反射-P475" class="headerlink" title="8.3 朗伯反射 P475"></a>8.3 朗伯反射 P475</h2><p>最简单的BRDF之一是朗伯模型。这个模型是完美的漫反射面，将入射光均匀的分散到各个方向上。尽管在物理上并不可信，但是模拟一些诸如无光油漆之类的面效果还算差强人意。<br>Lambertian的构造函数需要反射光谱R，反射分布函数返回常数R/π而非R，原因是在于传入构造函数的R等于上述ρhd积分。rho()的实现也很直观，不再赘述。</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/CG/" rel="tag">#CG</a>
+          
+            <a href="/tags/PBRT/" rel="tag">#PBRT</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/09/14/pbrt-ch7-3/" rel="next" title="PBRT 章节7 采样与重构 3/3">
+                <i class="fa fa-chevron-left"></i> PBRT 章节7 采样与重构 3/3
+              </a>
+            
+          </div>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel ">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.png"
+               alt="Sulpures" />
+          <p class="site-author-name" itemprop="name">Sulpures</p>
+          <p class="site-description motion-element" itemprop="description">「今せぇいっぱい生きよう」</p>
+        </div>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">11</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">1</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+            
+              
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#8-1-基本接口-P457"><span class="nav-number">1.</span> <span class="nav-text">8.1 基本接口 P457</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#8-1-1-反射率"><span class="nav-number">1.1.</span> <span class="nav-text">8.1.1 反射率</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#8-1-2-BRDF-gt-BTDF适配器"><span class="nav-number">1.2.</span> <span class="nav-text">8.1.2 BRDF->BTDF适配器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#8-1-3-BxDF缩放适配器"><span class="nav-number">1.3.</span> <span class="nav-text">8.1.3 BxDF缩放适配器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#8-2-镜面反射和透射-P461"><span class="nav-number">2.</span> <span class="nav-text">8.2 镜面反射和透射 P461</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#8-2-1-菲涅耳反射率"><span class="nav-number">2.1.</span> <span class="nav-text">8.2.1 菲涅耳反射率</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#8-2-2-镜面反射"><span class="nav-number">2.2.</span> <span class="nav-text">8.2.2 镜面反射</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#8-2-3-镜面透射"><span class="nav-number">3.</span> <span class="nav-text">8.2.3 镜面透射</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#8-3-朗伯反射-P475"><span class="nav-number">4.</span> <span class="nav-text">8.3 朗伯反射 P475</span></a></li></ol></div>
+            
+          </div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2016</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Sulpures</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/vendors/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.0.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.0.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.0.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.0.1"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+  
+  
+
+  
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        inlineMath: [ ['$','$'], ["\\(","\\)"]  ],
+        processEscapes: true,
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+  </script>
+
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+      var all = MathJax.Hub.getAllJax(), i;
+      for (i=0; i < all.length; i += 1) {
+        all[i].SourceElement().parentNode.className += ' has-jax';
+      }
+    });
+  </script>
+  <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+  
+
+  
+
+</body>
+</html>
